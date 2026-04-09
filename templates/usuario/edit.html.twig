@@ -1,0 +1,127 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modificar Usuario: {{ usuario.strNombreUsuario }}{% endblock %}
+
+{% block body %}
+    <div class="container-fluid px-4 py-3">
+        <nav class="small mb-3">
+            <ol class="breadcrumb bg-transparent p-0 mb-0">
+                <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}" class="text-secondary text-decoration-none">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ path('app_usuario_index') }}" class="text-secondary text-decoration-none text-info">Usuarios</a></li>
+                <li class="breadcrumb-item active fw-bold text-dark">Modificar Registro</li>
+            </ol>
+        </nav>
+
+        {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+        <div class="card shadow-lg border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 3px solid #0dcaf0;">
+                <div class="d-flex align-items-center">
+                    <div class="position-relative me-3">
+                        <img id="img-header" src="{{ asset('uploads/fotos/' ~ (usuario.foto ?: 'default.png')) }}"
+                             width="45" height="45" class="rounded-circle border border-2 border-info shadow-sm" style="object-fit: cover;">
+                    </div>
+                    <div>
+                        <h5 class="mb-0 fw-bold">Modificar Usuario: <span class="text-info">{{ usuario.strNombreUsuario }}</span></h5>
+                        <small class="text-uppercase opacity-75 small">Estado: {{ usuario.idEstadoUsuario ? 'ACTIVO' : 'INACTIVO' }}</small>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ path('app_usuario_index') }}" class="btn btn-outline-light btn-sm px-3 border-0 fw-bold">Cancelar</a>
+                    <button type="submit" class="btn btn-info btn-sm px-4 fw-bold shadow-sm rounded-pill text-dark">
+                        <i class="bi bi-arrow-repeat me-1"></i> ACTUALIZAR DATOS
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body py-4 px-4 bg-white">
+                <div class="row g-4">
+                    <div class="col-lg-8 border-end border-light">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <h6 class="text-uppercase text-info fw-bold mb-2 small" style="letter-spacing: 1px;">
+                                    <i class="bi bi-person-badge me-2"></i>Información de Identidad
+                                </h6>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form_label(form.strNombreUsuario, 'Nombre de Usuario', {'label_attr': {'class': 'small fw-bold mb-1 text-muted'}}) }}
+                                {{ form_widget(form.strNombreUsuario, {'attr': {'class': 'form-control form-control-sm ' ~ (form.strNombreUsuario.vars.valid ? '' : 'is-invalid')}}) }}
+                                <div class="invalid-feedback">{{ form_errors(form.strNombreUsuario) }}</div>
+                            </div>
+                            <div class="col-md-5">
+                                {{ form_label(form.strCorreo, 'Correo Electrónico', {'label_attr': {'class': 'small fw-bold mb-1 text-muted'}}) }}
+                                {{ form_widget(form.strCorreo, {'attr': {'class': 'form-control form-control-sm ' ~ (form.strCorreo.vars.valid ? '' : 'is-invalid')}}) }}
+                                <div class="invalid-feedback">{{ form_errors(form.strCorreo) }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                {{ form_label(form.strNumeroCelular, 'Teléfono de Contacto', {'label_attr': {'class': 'small fw-bold mb-1 text-muted'}}) }}
+                                {{ form_widget(form.strNumeroCelular, {'attr': {'class': 'form-control form-control-sm ' ~ (form.strNumeroCelular.vars.valid ? '' : 'is-invalid')}}) }}
+                                <div class="invalid-feedback">{{ form_errors(form.strNumeroCelular) }}</div>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <h6 class="text-uppercase text-info fw-bold mb-2 small" style="letter-spacing: 1px;">
+                                    <i class="bi bi-shield-lock me-2"></i>Seguridad y Niveles de Acceso
+                                </h6>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="small fw-bold mb-1 text-muted">Contraseña <small class="text-muted fw-normal">(Opcional)</small></label>
+                                {{ form_widget(form.strPwd, {'attr': {'class': 'form-control form-control-sm ' ~ (form.strPwd.vars.valid ? '' : 'is-invalid'), 'placeholder': 'Completar para modificar'}}) }}
+                                <div class="invalid-feedback">{{ form_errors(form.strPwd) }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form_label(form.perfil, 'Perfil del Sistema', {'label_attr': {'class': 'small fw-bold mb-1 text-muted'}}) }}
+                                {{ form_widget(form.perfil, {'attr': {'class': 'form-select form-select-sm ' ~ (form.perfil.vars.valid ? '' : 'is-invalid')}}) }}
+                                <div class="invalid-feedback">{{ form_errors(form.perfil) }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                {{ form_label(form.idEstadoUsuario, 'Estado de Cuenta', {'label_attr': {'class': 'small fw-bold mb-1 text-muted'}}) }}
+                                {{ form_widget(form.idEstadoUsuario, {'attr': {'class': 'form-select form-select-sm fw-bold'}}) }}
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <label class="small fw-bold mb-1 d-block text-muted text-uppercase">Roles Asignados (Symfony)</label>
+                                <div class="p-2 bg-light rounded-3 border d-flex gap-3">
+                                    {{ form_widget(form.roles) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 text-center d-flex flex-column align-items-center justify-content-center bg-light-subtle py-3">
+                        <h6 class="text-uppercase text-muted fw-bold mb-3 small">Imagen de Perfil Actual</h6>
+                        <div class="position-relative mb-4">
+                            <img id="img-preview" src="{{ asset('uploads/fotos/' ~ (usuario.foto ?: 'default.png')) }}"
+                                 width="160" height="160" class="rounded-4 border border-4 border-white shadow-sm" style="object-fit: cover;">
+                            <label for="{{ form.foto.vars.id }}" class="position-absolute top-100 start-50 translate-middle badge rounded-circle bg-primary p-2 border border-2 border-white shadow-sm" style="cursor: pointer;">
+                                <i class="bi bi-camera-fill"></i>
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-4 fw-bold" onclick="document.getElementById('{{ form.foto.vars.id }}').click();">
+                            REEMPLAZAR IMAGEN
+                        </button>
+                        <div class="d-none">{{ form_widget(form.foto, {'attr': {'onchange': 'previewImage(this)'}}) }}</div>
+                        <p class="text-muted mt-3 mb-0" style="font-size: 0.65rem;">Formatos aceptados: JPG, PNG. Tamaño máximo: 2MB.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{ form_end(form) }}
+    </div>
+
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('img-preview').src = e.target.result;
+                    document.getElementById('img-header').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+    <style>
+        .form-control-sm:focus, .form-select-sm:focus { border-color: #0dcaf0; box-shadow: 0 0 0 0.2rem rgba(13, 202, 240, 0.1); }
+        #usuario_roles div { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; color: #495057; }
+    </style>
+{% endblock %}

@@ -1,11 +1,17 @@
-# yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
+# Rutas manuales primero
+app_demo_modulo:
+    path: /vistas/demo/{id}
+    controller: App\Controller\DemoController::demo
 
-# This file is the entry point to configure the routes of your app.
-# Methods with the #[Route] attribute are automatically imported.
-# See also https://symfony.com/doc/current/routing.html
+app_dashboard:
+    path: /
+    controller: App\Controller\DashboardController::index
 
-# To list all registered routes, run the following command:
-#   bin/console debug:router
+api_login_check:
+    path: /api/login_check
+    methods: [POST]
 
+# Luego el escaneo automático para lo demás
 controllers:
-    resource: routing.controllers
+    resource: ../src/Controller/
+    type: attribute

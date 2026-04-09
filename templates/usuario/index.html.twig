@@ -1,0 +1,206 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Usuarios - Rogelio Funes Mori Productions{% endblock %}
+
+{% block body %}
+    <div class="container py-4">
+        {# 1. BREADCRUMBS MINIMALISTAS #}
+        <nav class="small mb-3" style="--bs-breadcrumb-divider: '›';">
+            <ol class="breadcrumb bg-transparent p-0 mb-0">
+                <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}" class="text-secondary text-decoration-none">Inicio</a></li>
+                <li class="breadcrumb-item text-secondary">Seguridad</li>
+                <li class="breadcrumb-item active fw-bold text-dark">Usuarios</li>
+            </ol>
+        </nav>
+
+        {# 2. ENCABEZADO #}
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">Personal Registrado</h4>
+                <p class="text-muted small mb-0">Gestión de talento en Rogelio Funes Mori Productions</p>
+            </div>
+            {% if is_granted('MODULO_AGREGAR', nombreModulo) %}
+                <a href="{{ path('app_usuario_new') }}" class="btn btn-primary btn-sm px-4 shadow-sm rounded-pill fw-bold" style="background-color: #004a98; border: none;">
+                    <i class="bi bi-person-plus-fill me-1"></i> NUEVO USUARIO
+                </a>
+            {% endif %}
+        </div>
+
+        {# 3. FILTROS AUTO-EJECUTABLES (UX Pro) #}
+        <div class="bg-white border rounded-3 p-3 mb-4 shadow-sm">
+            <form id="filter-form" method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="small fw-bold text-muted mb-1 text-uppercase" style="font-size: 0.7rem;">Buscar por nombre</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-primary"></i></span>
+                        <input type="text" name="usuario" value="{{ app.request.query.get('usuario') }}" class="form-control border-start-0 ps-0 filter-input" placeholder="Escribe para buscar...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted mb-1 text-uppercase" style="font-size: 0.7rem;">Perfil Asignado</label>
+                    <select name="perfil" class="form-select form-select-sm border-light-subtle filter-input">
+                        <option value="">Todos los perfiles</option>
+                        {% for p in perfiles %}
+                            <option value="{{ p.id }}" {{ app.request.query.get('perfil') == p.id ? 'selected' : '' }}>{{ p.strNombrePerfil }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold text-muted mb-1 text-uppercase" style="font-size: 0.7rem;">Estado</label>
+                    <select name="estado" class="form-select form-select-sm border-light-subtle filter-input">
+                        <option value="">Todos</option>
+                        <option value="1" {{ app.request.query.get('estado') == '1' ? 'selected' : '' }}>Activos</option>
+                        <option value="0" {{ app.request.query.get('estado') == '0' ? 'selected' : '' }}>Inactivos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <a href="{{ path('app_usuario_index') }}" class="btn btn-outline-secondary btn-sm w-100 fw-bold shadow-sm rounded-2">
+                        <i class="bi bi-eraser-fill me-1"></i> LIMPIAR
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        {# 4. TABLA (LIMPIA DE IDs) #}
+        <div class="bg-white border rounded-3 shadow-sm overflow-hidden">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                <thead class="bg-light border-bottom">
+                <tr class="text-muted small text-uppercase" style="letter-spacing: 0.5px;">
+                    <th class="ps-4 py-3 fw-semibold border-0">Usuario</th>
+                    <th class="fw-semibold border-0">Perfil</th>
+                    <th class="text-center fw-semibold border-0">Estado</th>
+                    <th class="text-center fw-semibold border-0">Acciones</th>
+                </tr>
+                </thead>
+                <tbody class="border-top-0">
+                {% for usuario in usuarios %}
+                    <tr id="usuario-row-{{ usuario.id }}" class="fila-usuario" style="transition: all 0.3s ease;">
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ asset('uploads/fotos/' ~ (usuario.foto ?: 'default.png')) }}"
+                                     width="40" height="40" class="rounded-circle me-3 border shadow-sm" style="object-fit: cover;">
+                                <div>
+                                    <span class="fw-bold d-block text-dark">{{ usuario.strNombreUsuario }}</span>
+                                    {# ID REMOVIDO PARA MAYOR LIMPIEZA VISUAL #}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge px-2 py-1 text-uppercase" style="background-color: #eef2ff; color: #004a98; font-size: 0.65rem; border: 1px solid #d0d7f7;">
+                                {{ usuario.perfil.strNombrePerfil|default('N/A') }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <div class="rounded-circle me-2 {{ usuario.idEstadoUsuario ? 'bg-success' : 'bg-danger' }}" style="width: 7px; height: 7px;"></div>
+                                <span class="small fw-semibold {{ usuario.idEstadoUsuario ? 'text-success' : 'text-danger' }}" style="font-size: 0.75rem;">
+                                    {{ usuario.idEstadoUsuario ? 'ACTIVO' : 'INACTIVO' }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-3">
+                                {% if usuario.id != 7 %}
+                                    {% if is_granted('MODULO_EDITAR', nombreModulo) %}
+                                        <a href="{{ path('app_usuario_edit', {id: usuario.id}) }}" class="text-primary hover-scale" title="Editar"><i class="bi bi-pencil-square fs-5"></i></a>
+                                    {% endif %}
+                                    {% if is_granted('MODULO_ELIMINAR', nombreModulo) and usuario != app.user %}
+                                        <button class="btn-delete-fetch border-0 bg-transparent text-danger p-0 hover-scale"
+                                                data-id="{{ usuario.id }}" data-url="{{ path('app_usuario_delete', {id: usuario.id}) }}"
+                                                data-token="{{ csrf_token('delete' ~ usuario.id) }}" data-nombre="{{ usuario.strNombreUsuario }}">
+                                            <i class="bi bi-trash3-fill fs-5"></i>
+                                        </button>
+                                    {% endif %}
+                                {% else %}
+                                    <i class="bi bi-shield-lock-fill text-muted opacity-50 fs-5" title="Protegido"></i>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted small italic">No se encontraron colaboradores con estos criterios.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            {# 5. PAGINACIÓN #}
+            <div class="px-4 py-3 bg-light border-top d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Mostrando <b>{{ usuarios|length }}</b> resultados</span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {{ currentPage == 1 ? 'disabled' : '' }}">
+                        <a class="page-link border shadow-sm text-dark px-2 mx-1 rounded-2" href="{{ path('app_usuario_index', {page: 1}) }}"><i class="bi bi-chevron-double-left"></i></a>
+                    </li>
+                    <li class="page-item {{ currentPage == 1 ? 'disabled' : '' }}">
+                        <a class="page-link border shadow-sm text-dark px-3 rounded-2 fw-bold" href="{{ path('app_usuario_index', {page: currentPage - 1}) }}">ANTERIOR</a>
+                    </li>
+                    <li class="page-item {{ currentPage == pagesCount ? 'disabled' : '' }} ms-1">
+                        <a class="page-link border shadow-sm text-dark px-3 rounded-2 fw-bold" href="{{ path('app_usuario_index', {page: currentPage + 1}) }}">SIGUIENTE</a>
+                    </li>
+                    <li class="page-item {{ currentPage == pagesCount ? 'disabled' : '' }}">
+                        <a class="page-link border shadow-sm text-dark px-2 mx-1 rounded-2" href="{{ path('app_usuario_index', {page: pagesCount}) }}"><i class="bi bi-chevron-double-right"></i></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .text-primary { color: #004a98 !important; }
+        .hover-scale { transition: transform 0.2s; }
+        .hover-scale:hover { transform: scale(1.15); }
+        .page-link:focus { box-shadow: none; }
+        .filter-input:focus { border-color: #004a98; box-shadow: 0 0 0 0.2rem rgba(0, 74, 152, 0.15); }
+        .breadcrumb-item + .breadcrumb-item::before { content: "›"; color: #adb5bd; }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterForm = document.getElementById('filter-form');
+            const inputs = document.querySelectorAll('.filter-input');
+
+            // AUTO-FILTRADO INTELIGENTE
+            inputs.forEach(input => {
+                // Para selects, el envío es inmediato
+                input.addEventListener('change', () => filterForm.submit());
+
+                // Para el buscador de texto, usamos un debounce de 600ms
+                if(input.type === 'text') {
+                    let timeout = null;
+                    input.addEventListener('keyup', () => {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(() => {
+                            filterForm.submit();
+                        }, 600);
+                    });
+                }
+            });
+
+            // ELIMINACIÓN ASÍNCRONA (FETCH)
+            document.querySelectorAll('.btn-delete-fetch').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    if (!confirm(`¿Eliminar definitivamente a ${this.dataset.nombre}?`)) return;
+                    const params = new URLSearchParams();
+                    params.append('_token', this.dataset.token);
+                    try {
+                        const res = await fetch(this.dataset.url, {
+                            method: 'POST',
+                            body: params,
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        });
+                        if (res.ok) {
+                            const row = document.getElementById(`usuario-row-${this.dataset.id}`);
+                            row.style.opacity = '0';
+                            row.style.transform = 'translateX(30px)';
+                            setTimeout(() => row.remove(), 300);
+                        }
+                    } catch (e) {
+                        alert("Error al procesar la solicitud.");
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

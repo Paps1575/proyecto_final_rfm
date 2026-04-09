@@ -1,0 +1,18 @@
+{# templates/_partials/_breadcrumbs.html.twig #}
+{% if breadcrumbs is defined %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-light p-2 rounded shadow-sm">
+            {% for crumb in breadcrumbs %}
+                {% if loop.last or crumb.path is null %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ crumb.label }}</li>
+                {% else %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ path(crumb.path) }}" class="text-decoration-none fw-bold">
+                            {{ crumb.label }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+{% endif %}

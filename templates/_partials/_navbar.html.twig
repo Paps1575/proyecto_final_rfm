@@ -1,0 +1,50 @@
+<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+    {# --- ENLACE INICIO --- #}
+    <li class="nav-item">
+        <a class="nav-link {{ app.request.get('_route') == 'app_dashboard' ? 'active' : '' }}" href="{{ path('app_dashboard') }}">
+            <i class="bi bi-house-door-fill me-1"></i> Inicio
+        </a>
+    </li>
+
+    {# --- DROPDOWN DE SEGURIDAD (EL QUE BUSCAS) --- #}
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle {{ app.request.get('_route') starts with 'app_perfil' or app.request.get('_route') starts with 'app_usuario' ? 'active' : '' }}"
+           href="#"
+           id="navbarSeguridad"
+           role="button"
+           data-bs-toggle="dropdown"
+           aria-expanded="false">
+            <i class="bi bi-shield-lock-fill me-1"></i> Seguridad
+        </a>
+        <ul class="dropdown-menu shadow-sm border-0 animate__animated animate__fadeIn animate__faster" aria-labelledby="navbarSeguridad">
+            <li>
+                <a class="dropdown-item py-2" href="{{ path('app_usuario_index') }}">
+                    <i class="bi bi-people me-2 text-info"></i> Usuarios
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2" href="{{ path('app_perfil_index') }}">
+                    <i class="bi bi-fingerprint me-2 text-info"></i> Perfiles
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item py-2" href="{{ path('app_modulo_index') }}">
+                    <i class="bi bi-layers me-2 text-info"></i> Módulos
+                </a>
+            </li>
+            <li>
+                {# Aquí iría tu ruta de Matriz de Permisos #}
+                <a class="dropdown-item py-2" href="/vistas/permisos">
+                    <i class="bi bi-table me-2 text-info"></i> Permisos Perfil
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    {# --- OTROS MENÚS --- #}
+    <li class="nav-item">
+        <a class="nav-link" href="#">Principal 1</a>
+    </li>
+</ul>

@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bienvenido - Rogelio Funes Mori Productions{% endblock %}
+
+{% block body %}
+    <div class="container d-flex align-items-center justify-content-center" style="min-height: 75vh;">
+        <div class="text-center animate__animated animate__fadeInUp">
+
+            {# ICONO DE BIENVENIDA #}
+            <div class="mb-4">
+                <div class="bg-primary bg-opacity-10 d-inline-block p-4 rounded-circle shadow-sm">
+                    <i class="bi bi-shield-check text-primary" style="font-size: 5rem;"></i>
+                </div>
+            </div>
+
+            {# TEXTO PRINCIPAL #}
+            <h1 class="display-3 fw-bold text-dark mb-0">
+                ¡Qué onda, <span class="text-primary text-uppercase">{{ app.user.strNombreUsuario|default('Usuario') }}</span>!
+            </h1>
+
+            <div class="mt-2 mb-5">
+                <h2 class="h4 text-muted fw-normal italic">
+                    Bienvenido al Sistema de Gestión de <strong>Rogelio Funes Mori Productions</strong>.
+                </h2>
+            </div>
+
+            {# LÍNEA DE SEPARACIÓN ELEGANTE #}
+            <div class="d-flex justify-content-center">
+                <hr class="w-25 border-primary border-2 opacity-25">
+            </div>
+
+            {# FRASE DE PIE #}
+            <p class="text-muted small mt-4">
+                <i class="bi bi-info-circle me-1"></i> Selecciona una opción del menú lateral para comenzar.
+            </p>
+
+            <div class="mt-5">
+                <span class="badge rounded-pill bg-light text-dark border px-3 py-2 shadow-sm">
+                    Versión 1.0.0 | © 2026
+                </span>
+            </div>
+        </div>
+    </div>
+{% endblock %}

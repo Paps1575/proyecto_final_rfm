@@ -1,0 +1,157 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestión de Perfiles - Funes Mori Productions{% endblock %}
+
+{% block body %}
+    <div class="container-fluid mt-4">
+        {# BREADCRUMBS #}
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb bg-transparent p-0">
+                <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}" class="text-decoration-none text-info"><i class="bi bi-house-door"></i> Inicio</a></li>
+                <li class="breadcrumb-item text-muted">Seguridad</li>
+                <li class="breadcrumb-item active fw-bold text-dark" aria-current="page">Gestión de Perfiles</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-lg border-0 border-top border-5 border-info rounded-4">
+            <div class="card-header bg-white py-4 px-4 d-flex justify-content-between align-items-center rounded-top-4">
+                <div>
+                    <h3 class="mb-0 fw-bold text-dark text-uppercase" style="letter-spacing: 1px;">
+                        <i class="bi bi-person-badge-fill text-info me-2"></i> Perfiles de Acceso
+                    </h3>
+                    <small class="text-muted italic">Control de jerarquías y matriz de permisos &copy; 2026</small>
+                </div>
+
+                {# BOTÓN NUEVO PERFIL: Ahora usa 'nombreModulo' del controlador #}
+                {% if is_granted('MODULO_AGREGAR', nombreModulo) %}
+                    <a href="{{ path('app_perfil_new') }}" class="btn btn-info text-white btn-lg px-4 shadow-sm fw-bold rounded-pill transition-hover">
+                        <i class="bi bi-plus-circle-fill me-2"></i> NUEVO PERFIL
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                        <tr>
+                            <th class="ps-4">Nombre del Perfil</th>
+                            <th class="text-center">Categoría</th>
+                            <th class="text-center">Módulos Activos</th>
+                            <th class="text-center pe-4" style="width: 220px;">Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for perfil in perfiles %}
+                            <tr id="perfil-row-{{ perfil.id }}" class="border-bottom transition-row">
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark fs-6 text-uppercase">{{ perfil.strNombrePerfil }}</div>
+                                    <small class="text-muted small italic">Configuración de acceso para {{ perfil.strNombrePerfil|lower }}</small>
+                                </td>
+                                <td class="text-center">
+                                    {# 🛡️ Lógica de categoría basada en el bit de administrador #}
+                                    {% if perfil.isBitAdministrador %}
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger px-3 py-2">
+                                            <i class="bi bi-shield-shaded me-1"></i>ADMINISTRADOR
+                                        </span>
+                                    {% else %}
+                                        <span class="badge rounded-pill bg-info-subtle text-info border border-info px-3 py-2">
+                                            <i class="bi bi-person me-1"></i>ESTÁNDAR
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {# 🛡️ CONTEO REAL DE MÓDULOS ACTIVOS #}
+                                    {% set activos = 0 %}
+                                    {% for p in perfil.permisoPerfils %}
+                                        {% if p.isBoolConsultar %}{% set activos = activos + 1 %}{% endif %}
+                                    {% endfor %}
+                                    <span class="badge bg-white text-dark border shadow-sm px-3 py-2 rounded-3">
+                                        <i class="bi bi-layers-fill me-1 text-info"></i>
+                                        <strong class="text-primary">{{ activos }}</strong> / {{ perfil.permisoPerfils|length }}
+                                    </span>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <div class="btn-group shadow-sm" role="group">
+                                        {# EL ADMIN RAÍZ (ID 7) NO SE TOCA #}
+                                        {% if perfil.id == 7 %}
+                                            <button type="button" class="btn btn-light text-muted border px-4" disabled>
+                                                <i class="bi bi-lock-fill text-danger me-1"></i> SISTEMA
+                                            </button>
+                                        {% else %}
+                                            {# EDITAR PERFIL: Validado por Voter #}
+                                            {% if is_granted('MODULO_EDITAR', nombreModulo) %}
+                                                <a href="{{ path('app_perfil_edit', {'id': perfil.id}) }}" class="btn btn-outline-info" title="Configurar Nombre y Accesos">
+                                                    <i class="bi bi-gear-fill"></i>
+                                                </a>
+                                            {% endif %}
+
+                                            {# ELIMINAR PERFIL: Solo si no es el Admin y tiene permiso #}
+                                            {% if is_granted('MODULO_ELIMINAR', nombreModulo) %}
+                                                <button type="button"
+                                                        class="btn btn-outline-danger"
+                                                        onclick="eliminarPerfil('{{ path('app_perfil_delete', {'id': perfil.id}) }}', {{ perfil.id }}, '{{ perfil.strNombrePerfil|upper }}', '{{ csrf_token('delete' ~ perfil.id) }}')"
+                                                        title="Eliminar Perfil">
+                                                    <i class="bi bi-trash3-fill"></i>
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <i class="bi bi-exclamation-triangle text-warning display-1 d-block mb-3"></i>
+                                    <h4 class="text-muted italic">No hay perfiles registrados.</h4>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1)!important; transition: 0.3s; }
+        .bg-info-subtle { background-color: #e0f7fa!important; }
+        .bg-danger-subtle { background-color: #ffebee!important; }
+        .transition-row { transition: all 0.3s ease; }
+        .table-hover tbody tr:hover { background-color: rgba(0, 188, 212, 0.02)!important; }
+    </style>
+
+    <script>
+        async function eliminarPerfil(url, id, nombre, token) {
+            if (!confirm(`¿ELIMINAR PERFIL: ${nombre}?\n\n¡CUIDADO! Se perderá la configuración de la matriz.`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('_token', token);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (response.ok || response.redirected) {
+                    const fila = document.getElementById(`perfil-row-${id}`);
+                    fila.style.background = "#fee2e2";
+                    fila.style.opacity = "0";
+                    fila.style.transform = "translateX(30px)";
+                    setTimeout(() => {
+                        window.location.reload(); // Recargamos para refrescar la lista y flashes
+                    }, 500);
+                } else {
+                    alert('No se pudo eliminar el perfil. Verifica si tiene usuarios vinculados.');
+                }
+            } catch (error) {
+                alert('Falla de conexión.');
+            }
+        }
+    </script>
+{% endblock %}

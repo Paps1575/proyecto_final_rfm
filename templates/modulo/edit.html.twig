@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Editar Módulo - Funes Mori Productions{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        {# Breadcrumbs sutiles #}
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb bg-transparent p-0">
+                <li class="breadcrumb-item small"><a href="{{ path('app_modulo_index') }}" class="text-decoration-none text-warning">Módulos</a></li>
+                <li class="breadcrumb-item small active fw-bold text-dark" aria-current="page">Editar Nombre</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-lg border-0 rounded-4 border-top border-5 border-warning mx-auto" style="max-width: 700px;">
+            <div class="card-header bg-white py-4 px-4 border-0">
+                <h4 class="mb-0 fw-bold text-dark text-uppercase" style="letter-spacing: 1px;">
+                    <i class="bi bi-pencil-square text-warning me-2"></i> Modificar Etiqueta
+                </h4>
+                <small class="text-muted italic">Módulo actual: <strong>{{ modulo.strNombre|upper }}</strong></small>
+            </div>
+
+            <div class="card-body p-4">
+                {{ form_start(form) }}
+                <div class="row g-4">
+                    {# ÚNICO CAMPO VISIBLE: EL NOMBRE #}
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold small text-muted text-uppercase mb-2">Nombre del Módulo (Visible en el Menú)</label>
+                        {{ form_widget(form.strNombre, {
+                            'attr': {
+                                'class': 'form-control form-control-lg border-warning shadow-sm',
+                                'placeholder': 'Ej: VENTAS, RRHH, SOPORTE...',
+                                'style': 'text-transform: uppercase;'
+                            }
+                        }) }}
+                        <div class="form-text mt-2 small italic">Este nombre es el que aparecerá en las etiquetas de la matriz de permisos.</div>
+                    </div>
+
+                    {# EL "PANTANO": Aquí escondemos la ruta, el ID y el resto para que Symfony no los pinte #}
+                    <div style="display: none !important;">
+                        {{ form_rest(form) }}
+                    </div>
+
+                    <div class="col-12 mt-4 text-end">
+                        <hr class="opacity-10 mb-4">
+                        <a href="{{ path('app_modulo_index') }}" class="btn btn-light px-4 me-2 fw-bold text-secondary">
+                            CANCELAR
+                        </a>
+                        <button type="submit" class="btn btn-warning px-5 fw-bold shadow-sm text-uppercase">
+                            <i class="bi bi-save-fill me-2"></i> Actualizar Nombre
+                        </button>
+                    </div>
+                </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Estilo para que el input resalte al hacer focus */
+        .form-control:focus {
+            border-color: #ffc107;
+            box-shadow: 0 0 0 0.25 red rgba(255, 193, 7, 0.25);
+        }
+        .card {
+            transition: transform 0.3s ease;
+        }
+    </style>
+{% endblock %}

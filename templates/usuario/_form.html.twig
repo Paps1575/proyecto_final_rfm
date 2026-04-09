@@ -1,0 +1,83 @@
+{# templates/usuario/_form.html.twig #}
+{{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+<div class="card shadow-sm border-0 mb-4">
+    {# ENCABEZADO DE LA CARD #}
+    <div class="card-header py-3" style="background-color: #1a446e; color: white;">
+        <h5 class="mb-0 fw-light"><i class="bi bi-person-gear me-2"></i> Datos del Usuario</h5>
+    </div>
+
+    <div class="card-body p-4 bg-light">
+        <div class="row g-3">
+            {# Fila 1: Usuario y Correo #}
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">Nombre de Usuario:</label>
+                {{ form_widget(form.strNombreUsuario, {'attr': {'class': 'form-control border-secondary shadow-sm'}}) }}
+                {{ form_errors(form.strNombreUsuario) }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">Correo Electrónico:</label>
+                {{ form_widget(form.strCorreo, {'attr': {'class': 'form-control border-secondary shadow-sm'}}) }}
+                {{ form_errors(form.strCorreo) }}
+            </div>
+
+            {# Fila 2: Teléfono y Perfil #}
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">Teléfono / Celular:</label>
+                {{ form_widget(form.strNumeroCelular, {'attr': {'class': 'form-control border-secondary shadow-sm'}}) }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">Perfil de Accesos:</label>
+                {{ form_widget(form.perfil, {'attr': {'class': 'form-select border-secondary shadow-sm'}}) }}
+            </div>
+
+            {# Fila 3: Contraseña (Ancho completo) #}
+            <div class="col-12">
+                <label class="form-label fw-bold small text-muted">Contraseña:</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-secondary"><i class="bi bi-key-fill text-primary"></i></span>
+                    {{ form_widget(form.strPwd, {'attr': {'class': 'form-control border-secondary shadow-sm'}}) }}
+                </div>
+                <div class="form-text small opacity-75">{{ form_help(form.strPwd) }}</div>
+                {{ form_errors(form.strPwd) }}
+            </div>
+
+            <hr class="my-4 border-2 opacity-25">
+
+            {# Fila 4: Roles y Estado #}
+            <div class="col-md-6">
+                <label class="form-label fw-bold text-primary d-block mb-2"><i class="bi bi-shield-check"></i> Roles de Seguridad</label>
+                <div class="p-3 bg-white border rounded shadow-sm">
+                    {% for role_child in form.roles %}
+                        <div class="form-check form-check-inline me-3">
+                            {{ form_widget(role_child, {'attr': {'class': 'form-check-input border-secondary'}}) }}
+                            {{ form_label(role_child, null, {'label_attr': {'class': 'form-check-label fw-bold small'}}) }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold text-primary d-block mb-2"><i class="bi bi-toggle-on"></i> Estado de Cuenta</label>
+                {{ form_widget(form.idEstadoUsuario, {'attr': {'class': 'form-select border-secondary shadow-sm'}}) }}
+            </div>
+        </div>
+    </div>
+
+    {# PIE DE CARD CON BOTONES #}
+    <div class="card-footer bg-white py-3 d-flex justify-content-end gap-2 border-top">
+        <a href="{{ path('app_usuario_index') }}" class="btn btn-secondary px-4 fw-bold shadow-sm" style="background-color: #6c757d;">
+            Cancelar
+        </a>
+        <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm" style="background-color: #5cb85c; border: none;">
+            <i class="bi bi-save me-1"></i> {{ button_label|default('Guardar Cambios') }}
+        </button>
+    </div>
+</div>
+{{ form_end(form) }}
+
+<style>
+    /* Estilo para que el form se vea más "pro" */
+    .form-control:focus, .form-select:focus {
+        border-color: #1a446e;
+        box-shadow: 0 0 0 0.25rem rgba(26, 68, 110, 0.1);
+    }
+</style>

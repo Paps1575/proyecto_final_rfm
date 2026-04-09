@@ -1,0 +1,83 @@
+{# templates/perfil/_form.html.twig #}
+{{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary text-white py-3">
+        <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Configuración de Identidad</h5>
+    </div>
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                {# Usamos form_label y form_widget por separado para mejor control de clases #}
+                <div class="form-group">
+                    {{ form_label(form.strNombrePerfil, 'Nombre del Perfil', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                    {{ form_widget(form.strNombrePerfil, {'attr': {'class': 'form-control form-control-lg', 'placeholder': 'Ej: Administrador de Ventas'}}) }}
+                    {{ form_errors(form.strNombrePerfil) }}
+                </div>
+            </div>
+            <div class="col-md-4 mt-4">
+                <div class="form-check form-switch ps-5">
+                    {{ form_widget(form.bitAdministrador, {'attr': {'class': 'form-check-input', 'role': 'switch'}}) }}
+                    {{ form_label(form.bitAdministrador, 'Acceso Total (Admin)', {'label_attr': {'class': 'form-check-label fw-bold'}}) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-dark text-white py-3">
+        <h5 class="mb-0"><i class="bi bi-grid-3x3-gap me-2"></i>Matriz de Permisos por Módulo</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+            <tr class="text-center">
+                <th class="text-start ps-4 py-3">Módulo del Sistema</th>
+                <th style="width: 15%;">Consultar</th>
+                <th style="width: 15%;">Agregar</th>
+                <th style="width: 15%;">Editar</th>
+                <th style="width: 15%;">Eliminar</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for permisoForm in form.permisoPerfils %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-light rounded p-2 me-3">
+                                <i class="bi bi-plugin text-primary"></i>
+                            </div>
+                            <div>
+                                <span class="fw-bold d-block text-dark">{{ permisoForm.vars.data.modulo.strNombre }}</span>
+                                <small class="text-muted">ID Módulo: {{ permisoForm.vars.data.modulo.id }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    {# Renderizamos cada checkbox con clases de Bootstrap para que se vean pro #}
+                    <td class="text-center">
+                        {{ form_widget(permisoForm.boolConsultar, {'attr': {'class': 'form-check-input'}}) }}
+                    </td>
+                    <td class="text-center">
+                        {{ form_widget(permisoForm.boolAgregar, {'attr': {'class': 'form-check-input'}}) }}
+                    </td>
+                    <td class="text-center">
+                        {{ form_widget(permisoForm.boolEditar, {'attr': {'class': 'form-check-input'}}) }}
+                    </td>
+                    <td class="text-center">
+                        {{ form_widget(permisoForm.boolEliminar, {'attr': {'class': 'form-check-input'}}) }}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-light d-flex justify-content-end gap-2 p-3">
+        <a href="{{ path('app_perfil_index') }}" class="btn btn-outline-secondary px-4">
+            <i class="bi bi-x-circle me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary px-5 shadow-sm">
+            <i class="bi bi-cloud-arrow-up me-1"></i> {{ button_label|default('Guardar Cambios') }}
+        </button>
+    </div>
+</div>
+{{ form_end(form) }}

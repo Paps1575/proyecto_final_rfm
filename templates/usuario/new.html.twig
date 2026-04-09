@@ -1,0 +1,156 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nuevo Usuario - RFM Productions{% endblock %}
+
+{% block body %}
+    <div class="container-fluid px-4 mt-4">
+        {# BREADCRUMB #}
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}" class="text-decoration-none">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ path('app_usuario_index') }}" class="text-decoration-none text-info">Usuarios</a></li>
+                <li class="breadcrumb-item active text-muted">Nuevo Registro</li>
+            </ol>
+        </nav>
+
+        {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
+            {# HEADER OSCURO #}
+            <div class="card-header bg-dark p-3 border-0">
+                <div class="d-flex justify-content-between align-items-center px-2">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle me-3 overflow-hidden shadow-sm" style="width: 45px; height: 45px; background: #2c3136; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-person-plus-fill text-info fs-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white mb-0 fw-bold">Alta de Usuario: <span class="text-info">Nuevo Registro</span></h4>
+                            <small class="text-white-50 small text-uppercase" style="letter-spacing: 1px;">ID: -- | ESTADO: NUEVO</small>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ path('app_usuario_index') }}" class="btn btn-link text-white text-decoration-none fw-bold small">Cancelar</a>
+                        <button type="submit" class="btn btn-info rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center">
+                            <i class="bi bi-person-check-fill me-2"></i> CREAR USUARIO
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                <div class="row g-4">
+                    {# COLUMNA IZQUIERDA #}
+                    <div class="col-lg-8 border-end border-light">
+
+                        {# SECCIÓN IDENTIDAD #}
+                        <div class="mb-4">
+                            <h6 class="text-info fw-bold text-uppercase mb-3 small" style="letter-spacing: 1px;">
+                                <i class="bi bi-card-text me-2"></i> Datos de Identidad
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    {{ form_label(form.strNombreUsuario, 'Login', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
+                                    {{ form_widget(form.strNombreUsuario, {'attr': {'class': 'form-control bg-light ' ~ (form.strNombreUsuario.vars.valid ? '' : 'is-invalid')}}) }}
+                                    <div class="invalid-feedback">{{ form_errors(form.strNombreUsuario) }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form_label(form.strCorreo, 'Email Institucional', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
+                                    {{ form_widget(form.strCorreo, {'attr': {'class': 'form-control bg-light ' ~ (form.strCorreo.vars.valid ? '' : 'is-invalid')}}) }}
+                                    <div class="invalid-feedback">{{ form_errors(form.strCorreo) }}</div>
+                                </div>
+
+                                {# CAMPO DINÁMICO PARA TELÉFONO (strNumeroCelular) #}
+                                <div class="col-md-4">
+                                    {% for child in form %}
+                                        {% if child.vars.name not in ['strNombreUsuario', 'strCorreo', 'strPwd', 'perfil', 'idEstadoUsuario', 'roles', 'foto', '_token'] %}
+                                            {{ form_label(child, 'Teléfono / WhatsApp', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
+                                            {{ form_widget(child, {'attr': {'class': 'form-control bg-light ' ~ (child.vars.valid ? '' : 'is-invalid'), 'placeholder': '10 dígitos'}}) }}
+                                            <div class="invalid-feedback">{{ form_errors(child) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="opacity-10 my-4">
+
+                        {# SECCIÓN SEGURIDAD #}
+                        <div class="mb-4">
+                            <h6 class="text-info fw-bold text-uppercase mb-3 small" style="letter-spacing: 1px;">
+                                <i class="bi bi-shield-lock me-2"></i> Seguridad y Accesos
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    {{ form_label(form.strPwd, 'Contraseña', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
+                                    {{ form_widget(form.strPwd, {'attr': {'class': 'form-control ' ~ (form.strPwd.vars.valid ? '' : 'is-invalid'), 'placeholder': 'Mínimo 6 caracteres'}}) }}
+                                    <div class="invalid-feedback">{{ form_errors(form.strPwd) }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form_label(form.perfil, 'Perfil Matriz', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
+                                    {{ form_widget(form.perfil, {'attr': {'class': 'form-select ' ~ (form.perfil.vars.valid ? '' : 'is-invalid')}}) }}
+                                    <div class="invalid-feedback">{{ form_errors(form.perfil) }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form_label(form.idEstadoUsuario, 'Estado', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
+                                    {{ form_widget(form.idEstadoUsuario, {'attr': {'class': 'form-select fw-bold text-success'}}) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# ROLES #}
+                        <div class="mt-4">
+                            <h6 class="text-muted fw-bold small text-uppercase mb-3">Roles Técnicos Symfony</h6>
+                            <div class="bg-light p-3 rounded-3 border d-flex gap-3">
+                                {{ form_widget(form.roles) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# COLUMNA DERECHA (AVATAR) #}
+                    <div class="col-lg-4 text-center">
+                        <h6 class="text-muted fw-bold text-uppercase mb-4 small">Avatar</h6>
+                        <div class="position-relative d-inline-block">
+                            <div class="rounded-4 overflow-hidden shadow-sm border p-1 bg-white" style="width: 180px; height: 180px;">
+                                <img id="img-preview" src="https://ui-avatars.com/api/?name=NU&background=0dcaf0&color=fff&size=200&bold=true" class="img-fluid rounded-3 h-100 w-100 object-fit-cover">
+                            </div>
+                            <label for="{{ form.foto.vars.id }}" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle p-2 shadow border border-2 border-white" style="cursor: pointer;">
+                                <i class="bi bi-camera-fill"></i>
+                            </label>
+                        </div>
+                        <div class="mt-4 px-4">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill w-100 mb-3 fw-bold" onclick="document.getElementById('{{ form.foto.vars.id }}').click();">
+                                SELECCIONAR ARCHIVO
+                            </button>
+                            <div class="d-none">
+                                {{ form_widget(form.foto, {'attr': {'onchange': 'previewImage(this)'}}) }}
+                            </div>
+                            <p class="text-muted small mt-2">Formatos: JPG, PNG (Máx 2MB)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{ form_end(form, {'render_rest': false}) }}
+    </div>
+
+    <style>
+        .form-control, .form-select { border-radius: 8px; border: 1px solid #dee2e6; padding: 0.6rem 0.75rem; transition: 0.2s; font-size: 0.9rem; }
+        .form-control:focus, .form-select:focus { border-color: #0dcaf0; box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.1); }
+        .is-invalid { border-color: #dc3545 !important; }
+        #usuario_roles { display: flex; gap: 15px; }
+        .object-fit-cover { object-fit: cover; }
+    </style>
+
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('img-preview').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+{% endblock %}

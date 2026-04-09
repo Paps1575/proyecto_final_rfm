@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Simulación: {{ modulo.strNombre }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        {# 1. BUSCAMOS EL PERMISO ESPECÍFICO PARA ESTE MÓDULO #}
+        {% set miPermiso = null %}
+        {% for p in app.user.perfil.permisoPerfils %}
+            {% if p.modulo.id == modulo.id %}
+                {% set miPermiso = p %}
+            {% endif %}
+        {% endfor %}
+
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="card-header bg-dark p-4 border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    {# TÍTULO LIMPIO #}
+                    <h2 class="text-white fw-bold mb-0 text-uppercase">
+                        <i class="bi bi-window-stack me-2 text-info"></i>
+                        {{ modulo.strNombre }}
+                    </h2>
+
+                    {# BOTÓN REGRESAR (SIEMPRE ACTIVO) #}
+                    <a href="{{ path('app_dashboard') }}" class="btn btn-outline-info rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-arrow-left-circle-fill me-2"></i> REGRESAR
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body p-5">
+                <div class="table-responsive rounded-3 border shadow-sm">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-4" style="width: 60%;">DESCRIPCIÓN DEL REGISTRO</th>
+                            <th class="text-center">ACCIONES PERMITIDAS (MATRIZ)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="ps-4">
+                                Mostrando simulación de datos para el módulo <strong>{{ modulo.strNombre }}</strong>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-2">
+
+                                    {# BOTÓN AGREGAR (MOVIDO AQUÍ) #}
+                                    {% if miPermiso and miPermiso.boolAgregar %}
+                                        <button class="btn btn-success shadow-sm" title="Agregar"><i class="bi bi-plus-lg"></i></button>
+                                    {% else %}
+                                        <button class="btn btn-light text-muted opacity-25" disabled><i class="bi bi-plus-lg"></i></button>
+                                    {% endif %}
+
+                                    {# BOTÓN CONSULTAR #}
+                                    {% if miPermiso and miPermiso.boolConsultar %}
+                                        <button class="btn btn-primary shadow-sm" title="Consultar"><i class="bi bi-eye-fill"></i></button>
+                                    {% else %}
+                                        <button class="btn btn-light text-muted opacity-25" disabled><i class="bi bi-eye"></i></button>
+                                    {% endif %}
+
+                                    {# BOTÓN EDITAR #}
+                                    {% if miPermiso and miPermiso.boolEditar %}
+                                        <button class="btn btn-warning text-white shadow-sm" title="Editar"><i class="bi bi-pencil-square"></i></button>
+                                    {% else %}
+                                        <button class="btn btn-light text-muted opacity-25" disabled><i class="bi bi-pencil"></i></button>
+                                    {% endif %}
+
+                                    {# BOTÓN ELIMINAR #}
+                                    {% if miPermiso and miPermiso.boolEliminar %}
+                                        <button class="btn btn-danger shadow-sm" title="Eliminar"><i class="bi bi-trash3-fill"></i></button>
+                                    {% else %}
+                                        <button class="btn btn-light text-muted opacity-25" disabled><i class="bi bi-trash3"></i></button>
+                                    {% endif %}
+
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer bg-light p-3 border-0 text-center">
+                <span class="text-muted small fw-bold">ROGELIO <span class="text-info">FUNES MORI</span> PRODUCTIONS © 2026</span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .btn { transition: all 0.2s ease; border-radius: 8px; }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+        .table-hover tbody tr:hover { background-color: rgba(13, 202, 240, 0.05); }
+        thead th { letter-spacing: 1px; font-weight: 700 !important; }
+    </style>
+{% endblock %}

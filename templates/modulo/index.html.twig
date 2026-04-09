@@ -1,0 +1,122 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Módulos - RFM Productions{% endblock %}
+
+{% block body %}
+    <div class="container py-4">
+        {# 1. BREADCRUMBS MINIMALISTAS #}
+        <nav class="small mb-3" style="--bs-breadcrumb-divider: '›';">
+            <ol class="breadcrumb bg-transparent p-0 mb-0">
+                <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}" class="text-secondary text-decoration-none">Inicio</a></li>
+                <li class="breadcrumb-item text-secondary">Configuración</li>
+                <li class="breadcrumb-item active fw-bold text-dark">Módulos</li>
+            </ol>
+        </nav>
+
+        {# 2. ENCABEZADO LIMPIO #}
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">Módulos del Sistema</h4>
+                <p class="text-muted small mb-0">Gestión de secciones en Rogelio Funes Mori Productions</p>
+            </div>
+            {% if is_granted('MODULO_AGREGAR', 'Modulos') %}
+                <a href="{{ path('app_modulo_new') }}" class="btn btn-primary btn-sm px-4 shadow-sm rounded-pill fw-bold" style="background-color: #004a98; border: none;">
+                    <i class="bi bi-plus-lg me-1"></i> NUEVO MÓDULO
+                </a>
+            {% endif %}
+        </div>
+
+        {# 3. TABLA ESENCIAL #}
+        <div class="bg-white border rounded-3 shadow-sm overflow-hidden">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                <thead class="bg-light border-bottom">
+                <tr class="text-muted small text-uppercase" style="letter-spacing: 0.5px;">
+                    <th class="ps-4 py-3 fw-semibold border-0">Nombre del Módulo</th>
+                    <th class="text-center fw-semibold border-0">Estado</th>
+                    <th class="text-center fw-semibold border-0">Acciones</th>
+                </tr>
+                </thead>
+                <tbody class="border-top-0">
+                {% for modulo in modulos %}
+                    <tr class="transition-row">
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 38px; height: 38px;">
+                                    <i class="bi bi-layers-fill text-primary"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-bold d-block text-dark text-uppercase">{{ modulo.strNombre }}</span>
+                                    <span class="text-muted extra-small italic">Sección activa del sistema</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <div class="rounded-circle me-2 bg-success" style="width: 7px; height: 7px;"></div>
+                                <span class="small fw-semibold text-success" style="font-size: 0.75rem;">ACTIVO</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group gap-2">
+                                {% if is_granted('MODULO_EDITAR', 'Modulos') %}
+                                    <a href="{{ path('app_modulo_edit', {id: modulo.id}) }}" class="text-primary hover-scale" title="Editar">
+                                        <i class="bi bi-pencil-square fs-5"></i>
+                                    </a>
+                                {% endif %}
+                                {% if is_granted('MODULO_ELIMINAR', 'Modulos') %}
+                                    <form method="post" action="{{ path('app_modulo_delete', {'id': modulo.id}) }}" onsubmit="return confirm('¿Eliminar módulo?');" style="display:inline;">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ modulo.id) }}">
+                                        <button class="border-0 bg-transparent text-danger p-0 hover-scale">
+                                            <i class="bi bi-trash3-fill fs-5"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center py-5 text-muted small italic">No hay módulos registrados.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            {# 4. PAGINACIÓN DISCRETA (PRIMERO/ÚLTIMO) #}
+            <div class="px-4 py-3 bg-light border-top d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Página <b>{{ currentPage }}</b> de <b>{{ pagesCount }}</b></span>
+                <ul class="pagination pagination-sm mb-0">
+                    {# PRIMERO #}
+                    <li class="page-item {{ currentPage == 1 ? 'disabled' : '' }}">
+                        <a class="page-link border shadow-sm text-dark px-2 mx-1 rounded-2" href="{{ path('app_modulo_index', {page: 1}) }}" title="Primero">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    {# ANTERIOR #}
+                    <li class="page-item {{ currentPage == 1 ? 'disabled' : '' }}">
+                        <a class="page-link border shadow-sm text-dark px-3 rounded-2 fw-bold" href="{{ path('app_modulo_index', {page: currentPage - 1}) }}">ANTERIOR</a>
+                    </li>
+                    {# SIGUIENTE #}
+                    <li class="page-item {{ currentPage == pagesCount ? 'disabled' : '' }} ms-1">
+                        <a class="page-link border shadow-sm text-dark px-3 rounded-2 fw-bold" href="{{ path('app_modulo_index', {page: currentPage + 1}) }}">SIGUIENTE</a>
+                    </li>
+                    {# ÚLTIMO #}
+                    <li class="page-item {{ currentPage == pagesCount ? 'disabled' : '' }}">
+                        <a class="page-link border shadow-sm text-dark px-2 mx-1 rounded-2" href="{{ path('app_modulo_index', {page: pagesCount}) }}" title="Último">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .text-primary { color: #004a98 !important; }
+        .extra-small { font-size: 0.7rem; }
+        .hover-scale { transition: transform 0.2s; display: inline-block; }
+        .hover-scale:hover { transform: scale(1.15); }
+        .page-link:hover { background-color: #e9ecef; }
+        .page-link:focus { box-shadow: none; }
+    </style>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nuevo Módulo - RFM Prods{% endblock %}
+
+{% block body %}
+    <div class="container d-flex align-items-center justify-content-center" style="min-height: 75vh;">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="max-width: 420px; width: 100%;">
+
+            {# HEADER MINIMALISTA #}
+            <div class="card-header bg-dark text-white text-center py-4 border-0">
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle mb-3" style="width: 60px; height: 60px;">
+                    <i class="bi bi-plus-square text-info fs-2"></i>
+                </div>
+                <h5 class="fw-bold mb-1 text-uppercase tracking-wider">Nuevo Módulo</h5>
+                <p class="text-muted small mb-0">Sincronización automática con perfiles</p>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                {{ form_start(form) }}
+
+                <div class="mb-4">
+                    <label class="small fw-bold text-secondary text-uppercase mb-2 d-block text-center">Nombre de la Sección</label>
+                    {{ form_widget(form.strNombre, {
+                        'attr': {
+                            'class': 'form-control form-control-lg border-0 bg-light text-center fw-bold text-uppercase',
+                            'placeholder': 'Ej: VENTAS',
+                            'style': 'font-size: 1.4rem; letter-spacing: 2px;'
+                        }
+                    }) }}
+                </div>
+
+                {# BOTONES LIMPIOS #}
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary py-2 fw-bold shadow-sm rounded-3" style="background-color: #004a98; border: none;">
+                        GUARDAR MÓDULO
+                    </button>
+                    <a href="{{ path('app_modulo_index') }}" class="btn btn-link btn-sm text-secondary text-decoration-none fw-bold">
+                        CANCELAR
+                    </a>
+                </div>
+
+                {# CAMPOS OCULTOS #}
+                <div class="d-none">
+                    {{ form_rest(form) }}
+                </div>
+
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .tracking-wider { letter-spacing: 1.5px; }
+        .form-control:focus { background-color: #eef2f7 !important; outline: none; box-shadow: none; }
+        .card { animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+{% endblock %}
