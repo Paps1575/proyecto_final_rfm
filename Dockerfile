@@ -8,12 +8,12 @@ RUN apt-get update && apt-get install -y \
     git \
     && docker-php-ext-install intl pdo_mysql zip
 
-# CONFIGURACIÓN APACHE MEJORADA
+# CONFIGURACIÓN DE RUTAS PARA SYMFONY
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
-# Esta línea permite que el .htaccess de Symfony funcione
+# Habilitar AllowOverride para que funcione el enrutamiento de Symfony
 RUN echo "<Directory /var/www/html/public>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" >> /etc/apache2/apache2.conf
 
 RUN a2enmod rewrite
