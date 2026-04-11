@@ -1,7 +1,7 @@
-# Usamos PHP 8.2 con Apache
-FROM php:8.2-apache
+# Cambiamos a la versión 8.4 que pide tu Symfony
+FROM php:8.4-apache
 
-# Instalamos dependencias del sistema necesarias para Symfony
+# Instalamos dependencias del sistema
 RUN apt-get update && apt-get install -y \
     libicu-dev \
     libzip-dev \
@@ -10,26 +10,22 @@ RUN apt-get update && apt-get install -y \
     git \
     && docker-php-ext-install intl pdo_mysql zip
 
-# Configuramos Apache para que apunte a la carpeta /public de Symfony
+# Configurar Apache para Symfony
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
-
-# Habilitamos el módulo rewrite de Apache para las rutas de Symfony
 RUN a2enmod rewrite
 
-# Copiamos los archivos del proyecto al contenedor
 WORKDIR /var/www/html
 COPY . .
 
-# Instalamos Composer de forma oficial
+# Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Instalamos las librerías de tu proyecto (sin scripts para evitar errores)
-RUN composer install --no-dev --optimize-autoloader --no-scripts
+# Aquí le decimos a Composer que ignore las restricciones de plataforma por si acaso
+RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Damos permisos a las carpetas de cache y logs
+# Permisos
 RUN chown -R www-data:www-data var/
 
-# Exponemos el puerto 80
 EXPOSE 80
