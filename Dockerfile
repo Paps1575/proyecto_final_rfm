@@ -29,13 +29,4 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platfo
 # Permisos finales de carpetas Symfony
 RUN mkdir -p var/cache var/log && chown -R www-data:www-data var/ && chmod -R 777 var/
 
-# --- CONFIGURACIÓN DEL ENTRYPOINT ---
-# Copiamos el script de inicio
-COPY docker-entrypoint.sh /usr/local/bin/
-# Nos aseguramos de que tenga permisos de ejecución en Linux
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Indicamos a Docker que use este script como proceso principal
-ENTRYPOINT ["docker-entrypoint.sh"]
-
 EXPOSE 80
