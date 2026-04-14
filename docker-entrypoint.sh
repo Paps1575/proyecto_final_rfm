@@ -1,17 +1,20 @@
 #!/bin/sh
 set -e
 
-# Creamos la carpeta de llaves
+# Crear carpeta de llaves
 mkdir -p /var/www/html/config/jwt
 
-# Decodificamos el contenido Base64 de las variables de Render hacia archivos .pem reales
-echo "$JWT_PRIVATE_KEY" | base64 -d > /var/www/html/config/jwt/private.pem
-echo "$JWT_PUBLIC_KEY" | base64 -d > /var/www/html/config/jwt/public.pem
+# Decodificar solo si la variable no está vacía y limpiar caracteres raros
+if [ -n "$JWT_PRIVATE_KEY" ]; then
+    echo "$JWT_PRIVATE_KEY" | tr -d '[:space:]' | base64 -d > /var/www/html/config/jwt/private.pem
+fi
 
-# Aseguramos permisos para que el usuario de Apache (www-data) sea el dueño
+if [ -n "$JWT_PUBLIC_KEY" ]; then
+    echo "$JWT_PUBLIC_KEY" | tr -d '[:space:]' | base64 -d > /var/www/html/config/jwt/public.pem
+fi
+
+# Permisos finales
 chown -R www-data:www-data /var/www/html/config/jwt
-# La llave privada debe tener permisos restrictivos por seguridad
-chmod 600 /var/www/html/config/jwt/private.pem
+chmod 600 /var/www/html/config/jwt/private.pem 2>/dev/null || true
 
-# Ejecutamos el comando original para encender Apache
 exec apache2-foreground
