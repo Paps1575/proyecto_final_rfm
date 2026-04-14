@@ -32,59 +32,82 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/', name: 'app_usuario_index', methods: ['GET'])]
-    public function index(UsuarioRepository $repo, PerfilRepository $perfilRepo, ModuloRepository $modRepo, Request $request): Response
-    {
-        $nombreMod = $this->getNombreModulo($modRepo);
+    public function index(
+        UsuarioRepository $usuarioRepository,
+        PerfilRepository $perfilRepository,
+        ModuloRepository $moduloRepository,
+        Request $request
+    ): Response {
+        $nombreMod = $this->getNombreModulo($moduloRepository);
+
         if (!$this->isGranted(ModuloVoter::CONSULTAR, $nombreMod)) {
-            $this->addFlash('warning', 'Sin acceso.');
+            $this->addFlash('warning', 'Acceso denegado: No tienes permisos de consulta.');
             return $this->redirectToRoute('app_dashboard');
         }
 
         $limit = 5;
         $page = $request->query->getInt('page', 1);
-        $usuarios = $repo->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
+        $usuarios = $usuarioRepository->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
+        $totalUsers = $usuarioRepository->count([]);
 
         return $this->render('usuario/index.html.twig', [
-            'usuarios' => $usuarios,
-            'perfiles' => $perfilRepo->findAll(),
+            'usuarios'     => $usuarios,
+            'perfiles'     => $perfilRepository->findAll(),
             'nombreModulo' => $nombreMod,
-            'currentPage' => $page,
-            'pagesCount' => ceil($repo->count([]) / $limit),
-            'totalUsers' => $repo->count([])
+            'currentPage'  => $page,
+            'pagesCount'   => ceil($totalUsers / $limit),
+            'totalUsers'   => $totalUsers
         ]);
     }
 
     #[Route('/nuevo', name: 'app_usuario_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $hasher, SluggerInterface $slugger, ModuloRepository $modRepo): Response
-    {
+    public function new(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        UserPasswordHasherInterface $passwordHasher,
+        SluggerInterface $slugger,
+        ModuloRepository $moduloRepository
+    ): Response {
+        $nombreMod = $this->getNombreModulo($moduloRepository);
+
+        if (!$this->isGranted(ModuloVoter::AGREGAR, $nombreMod)) {
+            $this->addFlash('danger', 'Acceso denegado: No puedes agregar usuarios.');
+            return $this->redirectToRoute('app_usuario_index');
+        }
+
         $usuario = new Usuario();
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => true]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Manejo de imagen con try-catch para que NO DE ERROR 500 si falla la carpeta
+            // 1. Manejo de imagen (Campo no mapeado)
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
+                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
                 try {
-                    $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
                     $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
                     $usuario->setFoto($newFilename);
-                } catch (\Exception $e) {
-                    $usuario->setFoto('default.png');
+                } catch (FileException $e) {
+                    $this->addFlash('danger', 'Error crítico: No se pudo guardar el archivo en el servidor.');
                 }
             } else {
                 $usuario->setFoto('default.png');
             }
 
+            // 2. Manejo de Password (Campo no mapeado)
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
-                $usuario->setPassword($hasher->hashPassword($usuario, $plainPassword));
+                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
             }
 
-            $em->persist($usuario);
-            $em->flush();
-            $this->addFlash('success', 'Usuario creado.');
-            return $this->redirectToRoute('app_usuario_index');
+            try {
+                $entityManager->persist($usuario);
+                $entityManager->flush();
+                $this->addFlash('success', '¡Usuario creado exitosamente!');
+                return $this->redirectToRoute('app_usuario_index');
+            } catch (\Exception $e) {
+                $this->addFlash('danger', 'Error de Base de Datos: El login o correo ya existen.');
+            }
         }
 
         return $this->render('usuario/new.html.twig', [
@@ -94,30 +117,43 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/{id}/editar', name: 'app_usuario_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Usuario $usuario, EntityManagerInterface $em, UserPasswordHasherInterface $hasher, SluggerInterface $slugger): Response
-    {
+    public function edit(
+        Request $request,
+        Usuario $usuario,
+        EntityManagerInterface $entityManager,
+        UserPasswordHasherInterface $passwordHasher,
+        SluggerInterface $slugger,
+        ModuloRepository $moduloRepository
+    ): Response {
+        $nombreMod = $this->getNombreModulo($moduloRepository);
+
+        if (!$this->isGranted(ModuloVoter::EDITAR, $nombreMod)) {
+            $this->addFlash('danger', 'Acceso denegado.');
+            return $this->redirectToRoute('app_usuario_index');
+        }
+
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => false]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
+                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
                 try {
-                    $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
                     $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
                     $usuario->setFoto($newFilename);
-                } catch (\Exception $e) {
-                    // No hace nada, conserva la que tiene
+                } catch (FileException $e) {
+                    $this->addFlash('danger', 'Error al actualizar la foto.');
                 }
             }
 
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
-                $usuario->setPassword($hasher->hashPassword($usuario, $plainPassword));
+                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
             }
 
-            $em->flush();
-            $this->addFlash('success', 'Usuario actualizado.');
+            $entityManager->flush();
+            $this->addFlash('success', 'Usuario actualizado correctamente.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
@@ -128,10 +164,12 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
-    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $em): Response {
+    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager): Response
+    {
         if ($this->isCsrfTokenValid('delete'.$usuario->getId(), $request->request->get('_token'))) {
-            $em->remove($usuario);
-            $em->flush();
+            $entityManager->remove($usuario);
+            $entityManager->flush();
+            $this->addFlash('info', 'Usuario eliminado.');
         }
         return $this->redirectToRoute('app_usuario_index');
     }
