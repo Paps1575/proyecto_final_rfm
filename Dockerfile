@@ -30,3 +30,6 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platfo
 RUN mkdir -p var/cache var/log && chown -R www-data:www-data var/ && chmod -R 777 var/
 
 EXPOSE 80
+
+# COMANDO CRÍTICO: Esto enciende Apache y lo mantiene vivo
+CMD ["apache2-foreground"]
