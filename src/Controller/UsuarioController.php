@@ -16,7 +16,6 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\String\Slugger\SluggerInterface;
-use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
 #[Route('/vistas/usuarios')]
 #[IsGranted('ROLE_USER')]
@@ -31,9 +30,6 @@ final class UsuarioController extends AbstractController
         return $modulo ? $modulo->getStrNombre() : 'USUARIOS';
     }
 
-    /**
-     * LISTADO (FUNCIONA)
-     */
     #[Route('/', name: 'app_usuario_index', methods: ['GET'])]
     public function index(
         UsuarioRepository $usuarioRepository,
@@ -63,9 +59,6 @@ final class UsuarioController extends AbstractController
         ]);
     }
 
-    /**
-     * NUEVO (CORREGIDO)
-     */
     #[Route('/nuevo', name: 'app_usuario_new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
@@ -86,17 +79,19 @@ final class UsuarioController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Manejo de imagen
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
-                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
-                $usuario->setFoto($newFilename);
+                try {
+                    $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
+                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                    $usuario->setFoto($newFilename);
+                } catch (\Exception $e) {
+                    $usuario->setFoto('default.png');
+                }
             } else {
                 $usuario->setFoto('default.png');
             }
 
-            // Password
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
                 $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
@@ -109,16 +104,13 @@ final class UsuarioController extends AbstractController
             return $this->redirectToRoute('app_usuario_index');
         }
 
-        // CAMBIO DE RUTA AQUÍ: De 'vistas/usuarios/new...' a 'usuario/new...'
         return $this->render('usuario/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
+            'nombreModulo' => $nombreMod, // ¡ESTA VARIABLE FALTABA!
         ]);
     }
 
-    /**
-     * EDITAR (CORREGIDO)
-     */
     #[Route('/{id}/editar', name: 'app_usuario_edit', methods: ['GET', 'POST'])]
     public function edit(
         Request $request,
@@ -141,9 +133,11 @@ final class UsuarioController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
-                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
-                $usuario->setFoto($newFilename);
+                try {
+                    $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
+                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                    $usuario->setFoto($newFilename);
+                } catch (\Exception $e) {}
             }
 
             $plainPassword = $form->get('strPwd')->getData();
@@ -156,15 +150,15 @@ final class UsuarioController extends AbstractController
             return $this->redirectToRoute('app_usuario_index');
         }
 
-        // CAMBIO DE RUTA AQUÍ TAMBIÉN
         return $this->render('usuario/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
+            'nombreModulo' => $nombreMod, // ¡Y AQUÍ TAMBIÉN FALTABA!
         ]);
     }
 
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
-    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager, ModuloRepository $moduloRepository): Response
+    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete'.$usuario->getId(), $request->request->get('_token'))) {
             $entityManager->remove($usuario);
