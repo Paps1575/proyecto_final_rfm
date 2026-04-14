@@ -26,8 +26,11 @@ WORKDIR /var/www/html
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Permisos finales de carpetas Symfony
-RUN mkdir -p var/cache var/log && chown -R www-data:www-data var/ && chmod -R 777 var/
+# --- PERMISOS Y CARPETAS ---
+# Creamos var/ y public/uploads/fotos, dando permisos de escritura al usuario de Apache
+RUN mkdir -p var/cache var/log public/uploads/fotos && \
+    chown -R www-data:www-data var/ public/uploads/ && \
+    chmod -R 775 var/ public/uploads/
 
 EXPOSE 80
 

@@ -13,6 +13,38 @@
             </ol>
         </nav>
 
+        {# 1. ALERTAS DE SESIÓN (FLASHES) #}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label }} alert-dismissible fade show shadow-sm rounded-4 border-0 mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                        <div>{{ message }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {# 2. RESUMEN DE ERRORES DE VALIDACIÓN (Solo aparece si hay fallas) #}
+        {% if not form.vars.valid %}
+            <div class="alert alert-danger shadow-sm rounded-4 border-0 mb-4" role="alert">
+                <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i> Por favor, corrige los siguientes errores:</h6>
+                <ul class="mb-0 small">
+                    {# Errores generales del formulario #}
+                    {% for error in form.vars.errors %}
+                        <li>{{ error.message }}</li>
+                    {% endfor %}
+                    {# Errores específicos de cada campo para verlos rápido #}
+                    {% for child in form.children %}
+                        {% for error in child.vars.errors %}
+                            <li><strong>{{ child.vars.label|default(child.vars.name|capitalize) }}:</strong> {{ error.message }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
 
         <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
@@ -51,12 +83,12 @@
                                 <div class="col-md-4">
                                     {{ form_label(form.strNombreUsuario, 'Login', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
                                     {{ form_widget(form.strNombreUsuario, {'attr': {'class': 'form-control bg-light ' ~ (form.strNombreUsuario.vars.valid ? '' : 'is-invalid')}}) }}
-                                    <div class="invalid-feedback">{{ form_errors(form.strNombreUsuario) }}</div>
+                                    <div class="invalid-feedback d-block">{{ form_errors(form.strNombreUsuario) }}</div>
                                 </div>
                                 <div class="col-md-4">
                                     {{ form_label(form.strCorreo, 'Email Institucional', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
                                     {{ form_widget(form.strCorreo, {'attr': {'class': 'form-control bg-light ' ~ (form.strCorreo.vars.valid ? '' : 'is-invalid')}}) }}
-                                    <div class="invalid-feedback">{{ form_errors(form.strCorreo) }}</div>
+                                    <div class="invalid-feedback d-block">{{ form_errors(form.strCorreo) }}</div>
                                 </div>
 
                                 {# CAMPO DINÁMICO PARA TELÉFONO (strNumeroCelular) #}
@@ -65,7 +97,7 @@
                                         {% if child.vars.name not in ['strNombreUsuario', 'strCorreo', 'strPwd', 'perfil', 'idEstadoUsuario', 'roles', 'foto', '_token'] %}
                                             {{ form_label(child, 'Teléfono / WhatsApp', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
                                             {{ form_widget(child, {'attr': {'class': 'form-control bg-light ' ~ (child.vars.valid ? '' : 'is-invalid'), 'placeholder': '10 dígitos'}}) }}
-                                            <div class="invalid-feedback">{{ form_errors(child) }}</div>
+                                            <div class="invalid-feedback d-block">{{ form_errors(child) }}</div>
                                         {% endif %}
                                     {% endfor %}
                                 </div>
@@ -83,12 +115,12 @@
                                 <div class="col-md-4">
                                     {{ form_label(form.strPwd, 'Contraseña', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
                                     {{ form_widget(form.strPwd, {'attr': {'class': 'form-control ' ~ (form.strPwd.vars.valid ? '' : 'is-invalid'), 'placeholder': 'Mínimo 6 caracteres'}}) }}
-                                    <div class="invalid-feedback">{{ form_errors(form.strPwd) }}</div>
+                                    <div class="invalid-feedback d-block">{{ form_errors(form.strPwd) }}</div>
                                 </div>
                                 <div class="col-md-4">
                                     {{ form_label(form.perfil, 'Perfil Matriz', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
                                     {{ form_widget(form.perfil, {'attr': {'class': 'form-select ' ~ (form.perfil.vars.valid ? '' : 'is-invalid')}}) }}
-                                    <div class="invalid-feedback">{{ form_errors(form.perfil) }}</div>
+                                    <div class="invalid-feedback d-block">{{ form_errors(form.perfil) }}</div>
                                 </div>
                                 <div class="col-md-4">
                                     {{ form_label(form.idEstadoUsuario, 'Estado', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
@@ -125,6 +157,8 @@
                                 {{ form_widget(form.foto, {'attr': {'onchange': 'previewImage(this)'}}) }}
                             </div>
                             <p class="text-muted small mt-2">Formatos: JPG, PNG (Máx 2MB)</p>
+                            {# Error de la foto #}
+                            <div class="text-danger small fw-bold">{{ form_errors(form.foto) }}</div>
                         </div>
                     </div>
                 </div>
@@ -137,7 +171,7 @@
     <style>
         .form-control, .form-select { border-radius: 8px; border: 1px solid #dee2e6; padding: 0.6rem 0.75rem; transition: 0.2s; font-size: 0.9rem; }
         .form-control:focus, .form-select:focus { border-color: #0dcaf0; box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.1); }
-        .is-invalid { border-color: #dc3545 !important; }
+        .invalid-feedback { font-weight: bold; }
         #usuario_roles { display: flex; gap: 15px; }
         .object-fit-cover { object-fit: cover; }
     </style>

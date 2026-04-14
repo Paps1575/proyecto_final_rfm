@@ -49,6 +49,11 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $strNumeroCelular = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\Image(
+        maxSize: "2M",
+        mimeTypes: ["image/jpeg", "image/png"],
+        mimeTypesMessage: "Por favor, sube una imagen válida (JPG o PNG) de máximo 2MB."
+    )]
     private ?string $foto = 'default.png';
 
     public function getId(): ?int { return $this->id; }
@@ -61,6 +66,8 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
     public function setRoles(array $roles): static { $this->roles = $roles; return $this; }
     public function getPassword(): ?string { return $this->strPwd; }
     public function setPassword(string $password): static { $this->strPwd = $password; return $this; }
+    public function getStrPwd(): ?string { return $this->strPwd; } // Getter necesario para el controlador
+    public function setStrPwd(?string $strPwd): static { $this->strPwd = $strPwd; return $this; }
     public function eraseCredentials(): void {}
 
     public function getStrNombreUsuario(): ?string { return $this->strNombreUsuario; }
