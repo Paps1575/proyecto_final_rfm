@@ -22,9 +22,6 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 #[IsGranted('ROLE_USER')]
 final class UsuarioController extends AbstractController
 {
-    /**
-     * Recupera el nombre del módulo para la seguridad dinámica
-     */
     private function getNombreModulo(ModuloRepository $moduloRepo): string
     {
         $modulo = $moduloRepo->findOneBy(['strRuta' => 'app_usuario_index'])
@@ -35,7 +32,7 @@ final class UsuarioController extends AbstractController
     }
 
     /**
-     * LISTADO CON PAGINACIÓN Y FILTROS
+     * LISTADO (FUNCIONA)
      */
     #[Route('/', name: 'app_usuario_index', methods: ['GET'])]
     public function index(
@@ -47,40 +44,27 @@ final class UsuarioController extends AbstractController
         $nombreMod = $this->getNombreModulo($moduloRepository);
 
         if (!$this->isGranted(ModuloVoter::CONSULTAR, $nombreMod)) {
-            $this->addFlash('warning', 'Acceso denegado: Tu perfil no tiene permiso para consultar este módulo.');
+            $this->addFlash('warning', 'Acceso denegado.');
             return $this->redirectToRoute('app_dashboard');
         }
 
         $limit = 5;
         $page = $request->query->getInt('page', 1);
-        if ($page < 1) $page = 1;
-
-        $nombre = $request->query->get('usuario');
-        $perfilId = $request->query->get('perfil');
-        $estado = $request->query->get('estado');
-
-        if ($nombre || $perfilId || ($estado !== null && $estado !== '')) {
-            $usuarios = $usuarioRepository->buscarConFiltros($nombre, $perfilId, $estado);
-            $totalUsers = count($usuarios);
-        } else {
-            $totalUsers = $usuarioRepository->count([]);
-            $usuarios = $usuarioRepository->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
-        }
-
-        $pagesCount = ceil($totalUsers / $limit);
+        $usuarios = $usuarioRepository->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
+        $totalUsers = $usuarioRepository->count([]);
 
         return $this->render('usuario/index.html.twig', [
             'usuarios'     => $usuarios,
             'perfiles'     => $perfilRepository->findAll(),
             'nombreModulo' => $nombreMod,
             'currentPage'  => $page,
-            'pagesCount'   => $pagesCount,
+            'pagesCount'   => ceil($totalUsers / $limit),
             'totalUsers'   => $totalUsers
         ]);
     }
 
     /**
-     * CREAR NUEVO USUARIO
+     * NUEVO (CORREGIDO)
      */
     #[Route('/nuevo', name: 'app_usuario_new', methods: ['GET', 'POST'])]
     public function new(
@@ -93,7 +77,7 @@ final class UsuarioController extends AbstractController
         $nombreMod = $this->getNombreModulo($moduloRepository);
 
         if (!$this->isGranted(ModuloVoter::AGREGAR, $nombreMod)) {
-            $this->addFlash('danger', 'Acceso denegado: No tienes permiso para agregar registros.');
+            $this->addFlash('danger', 'Sin permisos para agregar.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
@@ -101,51 +85,39 @@ final class UsuarioController extends AbstractController
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => true]);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted()) {
-            if ($form->isValid()) {
-                // 1. Manejo de Imagen (Campo no mapeado 'foto')
-                $fotoFile = $form->get('foto')->getData();
-                if ($fotoFile) {
-                    $originalFilename = pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $newFilename = $slugger->slug($originalFilename).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                    try {
-                        $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
-                        $usuario->setFoto($newFilename);
-                    } catch (FileException $e) {
-                        $this->addFlash('danger', 'Error físico al guardar la imagen.');
-                    }
-                } else {
-                    $usuario->setFoto('default.png');
-                }
-
-                // 2. Hasheo de Password (Campo no mapeado 'strPwd')
-                $plainPassword = $form->get('strPwd')->getData();
-                if ($plainPassword) {
-                    $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
-                }
-
-                try {
-                    $entityManager->persist($usuario);
-                    $entityManager->flush();
-
-                    $this->addFlash('success', '¡Usuario ' . $usuario->getStrNombreUsuario() . ' creado correctamente!');
-                    return $this->redirectToRoute('app_usuario_index');
-                } catch (\Exception $e) {
-                    $this->addFlash('danger', 'Error de Base de Datos: El login o correo ya podrían existir.');
-                }
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Manejo de imagen
+            $fotoFile = $form->get('foto')->getData();
+            if ($fotoFile) {
+                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
+                $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                $usuario->setFoto($newFilename);
             } else {
-                $this->addFlash('danger', 'Híjole, el formulario tiene errores. Revisa los campos marcados.');
+                $usuario->setFoto('default.png');
             }
+
+            // Password
+            $plainPassword = $form->get('strPwd')->getData();
+            if ($plainPassword) {
+                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
+            }
+
+            $entityManager->persist($usuario);
+            $entityManager->flush();
+
+            $this->addFlash('success', '¡Usuario creado!');
+            return $this->redirectToRoute('app_usuario_index');
         }
 
-        return $this->render('vistas/usuarios/new.html.twig', [
+        // CAMBIO DE RUTA AQUÍ: De 'vistas/usuarios/new...' a 'usuario/new...'
+        return $this->render('usuario/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
         ]);
     }
 
     /**
-     * EDITAR USUARIO
+     * EDITAR (CORREGIDO)
      */
     #[Route('/{id}/editar', name: 'app_usuario_edit', methods: ['GET', 'POST'])]
     public function edit(
@@ -159,86 +131,46 @@ final class UsuarioController extends AbstractController
         $nombreMod = $this->getNombreModulo($moduloRepository);
 
         if (!$this->isGranted(ModuloVoter::EDITAR, $nombreMod)) {
-            $this->addFlash('danger', 'Acceso denegado: Tu perfil no puede editar usuarios.');
-            return $this->redirectToRoute('app_usuario_index');
-        }
-
-        // Protección Admin Raíz (ID 7)
-        if ($usuario->getId() === 7 && $this->getUser()->getId() !== 7) {
-            $this->addFlash('danger', 'Acción restringida: El Administrador Principal está protegido.');
+            $this->addFlash('danger', 'Sin permisos para editar.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => false]);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted()) {
-            if ($form->isValid()) {
-                // Actualizar foto si se sube una nueva
-                $fotoFile = $form->get('foto')->getData();
-                if ($fotoFile) {
-                    $originalFilename = pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $newFilename = $slugger->slug($originalFilename).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
-                    $usuario->setFoto($newFilename);
-                }
-
-                // Cambiar password solo si el campo no está vacío
-                $plainPassword = $form->get('strPwd')->getData();
-                if ($plainPassword) {
-                    $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
-                }
-
-                try {
-                    $entityManager->flush();
-                    $this->addFlash('success', 'Los datos de ' . $usuario->getStrNombreUsuario() . ' se actualizaron correctamente.');
-                    return $this->redirectToRoute('app_usuario_index');
-                } catch (\Exception $e) {
-                    $this->addFlash('danger', 'Error al actualizar base de datos.');
-                }
-            } else {
-                $this->addFlash('danger', 'Error al actualizar: Revisa los datos ingresados.');
+        if ($form->isSubmitted() && $form->isValid()) {
+            $fotoFile = $form->get('foto')->getData();
+            if ($fotoFile) {
+                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
+                $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                $usuario->setFoto($newFilename);
             }
+
+            $plainPassword = $form->get('strPwd')->getData();
+            if ($plainPassword) {
+                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
+            }
+
+            $entityManager->flush();
+            $this->addFlash('success', 'Usuario actualizado.');
+            return $this->redirectToRoute('app_usuario_index');
         }
 
-        return $this->render('vistas/usuarios/edit.html.twig', [
+        // CAMBIO DE RUTA AQUÍ TAMBIÉN
+        return $this->render('usuario/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
         ]);
     }
 
-    /**
-     * ELIMINAR USUARIO
-     */
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
-    public function delete(
-        Request $request,
-        Usuario $usuario,
-        EntityManagerInterface $entityManager,
-        ModuloRepository $moduloRepository
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
-        if (!$this->isGranted(ModuloVoter::ELIMINAR, $nombreMod)) {
-            return $request->isXmlHttpRequest() ? new Response('Acceso denegado', 403) : $this->redirectToRoute('app_usuario_index');
-        }
-
-        if ($usuario->getId() === 7 || $this->getUser() === $usuario) {
-            $this->addFlash('warning', 'No puedes eliminar esta cuenta.');
-            return $this->redirectToRoute('app_usuario_index');
-        }
-
+    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager, ModuloRepository $moduloRepository): Response
+    {
         if ($this->isCsrfTokenValid('delete'.$usuario->getId(), $request->request->get('_token'))) {
             $entityManager->remove($usuario);
             $entityManager->flush();
-
-            $this->addFlash('info', 'Usuario eliminado satisfactoriamente.');
-
-            if ($request->isXmlHttpRequest()) {
-                return new Response(null, 204);
-            }
+            $this->addFlash('info', 'Usuario eliminado.');
         }
-
         return $this->redirectToRoute('app_usuario_index');
     }
 }
