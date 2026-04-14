@@ -7,7 +7,6 @@ use App\Form\UsuarioType;
 use App\Repository\UsuarioRepository;
 use App\Repository\PerfilRepository;
 use App\Repository\ModuloRepository;
-use App\Security\Voter\ModuloVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -61,7 +60,6 @@ final class UsuarioController extends AbstractController
             if ($fotoFile) {
                 try {
                     $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                    // Usamos kernel.project_dir que es nativo de Symfony
                     $dest = $this->getParameter('kernel.project_dir') . '/public/uploads/fotos';
                     $fotoFile->move($dest, $newFilename);
                     $usuario->setFoto($newFilename);
@@ -79,15 +77,16 @@ final class UsuarioController extends AbstractController
 
             $em->persist($usuario);
             $em->flush();
-            $this->addFlash('success', 'Usuario creado.');
+            $this->addFlash('success', '¡Usuario creado correctamente!');
             return $this->redirectToRoute('app_usuario_index');
         }
 
-        // RUTA: usuario/new.html.twig (Basado en tu imagen)
+        // MANDAMOS TODO LO QUE EL TWIG PODRÍA NECESITAR
         return $this->render('usuario/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
-            'nombreModulo' => $nombreMod // Variable necesaria para el layout
+            'nombreModulo' => $nombreMod,
+            'title' => 'Nuevo Usuario'
         ]);
     }
 
@@ -115,23 +114,25 @@ final class UsuarioController extends AbstractController
             }
 
             $em->flush();
-            $this->addFlash('success', 'Usuario actualizado.');
+            $this->addFlash('success', 'Usuario actualizado correctamente.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
-        // RUTA: usuario/edit.html.twig (Basado en tu imagen)
         return $this->render('usuario/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
-            'nombreModulo' => $nombreMod // Variable necesaria para el layout
+            'nombreModulo' => $nombreMod,
+            'title' => 'Editar Usuario'
         ]);
     }
 
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
-    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $em): Response {
+    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $em): Response
+    {
         if ($this->isCsrfTokenValid('delete'.$usuario->getId(), $request->request->get('_token'))) {
             $em->remove($usuario);
             $em->flush();
+            $this->addFlash('success', 'Usuario eliminado.');
         }
         return $this->redirectToRoute('app_usuario_index');
     }
