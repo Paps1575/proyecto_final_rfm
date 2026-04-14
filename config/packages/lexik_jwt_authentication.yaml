@@ -1,10 +1,11 @@
 # config/packages/lexik_jwt_authentication.yaml
 lexik_jwt_authentication:
-    secret_key: '%env(resolve:JWT_SECRET_KEY)%'
+    # Cambiamos JWT_SECRET_KEY por JWT_PRIVATE_KEY para que coincida con tu variable de Render
+    secret_key: '%env(resolve:JWT_PRIVATE_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
 
-    # Úsalo con guion bajo como te pidió el error:
-    pass_phrase: '%env(JWT_PASSPHRASE)%'
+    # El nombre correcto del parámetro es 'passphrase'
+    passphrase: '%env(JWT_PASSPHRASE)%'
 
     token_extractors:
         authorization_header:
