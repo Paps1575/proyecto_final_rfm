@@ -30,6 +30,7 @@ class UsuarioType extends AbstractType
             ])
             ->add('strPwd', PasswordType::class, [
                 'label' => $isNew ? 'Contraseña' : 'Cambiar Contraseña',
+                // Al ser un password que luego hasheamos, no lo mapeamos directo a la propiedad de la base de datos
                 'mapped' => false,
                 'required' => $isNew,
                 'attr' => [
@@ -48,15 +49,14 @@ class UsuarioType extends AbstractType
             ])
             ->add('foto', FileType::class, [
                 'label' => 'Foto de Perfil',
-                'mapped' => false,
+                'mapped' => false, // IMPORTANTE: El controlador maneja la subida física
                 'required' => false,
                 'attr' => ['class' => 'form-control rounded-3'],
                 'constraints' => [
-                    // CORRECCIÓN AQUÍ: Argumentos nombrados en lugar de array
                     new File(
                         maxSize: '2M',
                         mimeTypes: ['image/jpeg', 'image/png'],
-                        mimeTypesMessage: 'Sube una imagen válida (JPG o PNG)'
+                        mimeTypesMessage: 'Sube una imagen válida (JPG o PNG) de máximo 2MB'
                     )
                 ],
             ])
@@ -74,6 +74,7 @@ class UsuarioType extends AbstractType
                 ],
                 'expanded' => true,
                 'multiple' => true,
+                'attr' => ['class' => 'd-flex gap-3 mt-2']
             ])
             ->add('idEstadoUsuario', ChoiceType::class, [
                 'label' => 'Estado de la Cuenta',
@@ -90,19 +91,17 @@ class UsuarioType extends AbstractType
     {
         $constraints = [];
 
-        // CORRECCIÓN AQUÍ: Argumentos nombrados para Length
+        if ($isNew) {
+            $constraints[] = new NotBlank(
+                message: 'La contraseña es obligatoria para nuevos registros.'
+            );
+        }
+
         $constraints[] = new Length(
             min: 6,
             minMessage: 'La contraseña debe tener al menos {{ limit }} caracteres.',
             max: 4096
         );
-
-        if ($isNew) {
-            // CORRECCIÓN AQUÍ: Argumento nombrado para NotBlank
-            $constraints[] = new NotBlank(
-                message: 'La contraseña es obligatoria para nuevos registros.'
-            );
-        }
 
         return $constraints;
     }

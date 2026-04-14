@@ -26,16 +26,14 @@
             {% endfor %}
         {% endfor %}
 
-        {# 2. RESUMEN DE ERRORES DE VALIDACIÓN (Solo aparece si hay fallas) #}
+        {# 2. RESUMEN DE ERRORES DE VALIDACIÓN #}
         {% if not form.vars.valid %}
             <div class="alert alert-danger shadow-sm rounded-4 border-0 mb-4" role="alert">
                 <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i> Por favor, corrige los siguientes errores:</h6>
                 <ul class="mb-0 small">
-                    {# Errores generales del formulario #}
                     {% for error in form.vars.errors %}
                         <li>{{ error.message }}</li>
                     {% endfor %}
-                    {# Errores específicos de cada campo para verlos rápido #}
                     {% for child in form.children %}
                         {% for error in child.vars.errors %}
                             <li><strong>{{ child.vars.label|default(child.vars.name|capitalize) }}:</strong> {{ error.message }}</li>
@@ -45,7 +43,8 @@
             </div>
         {% endif %}
 
-        {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+        {# CORRECCIÓN: Se agrega enctype para permitir el envío de archivos (fotos) #}
+        {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
 
         <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
             {# HEADER OSCURO #}
@@ -91,7 +90,6 @@
                                     <div class="invalid-feedback d-block">{{ form_errors(form.strCorreo) }}</div>
                                 </div>
 
-                                {# CAMPO DINÁMICO PARA TELÉFONO (strNumeroCelular) #}
                                 <div class="col-md-4">
                                     {% for child in form %}
                                         {% if child.vars.name not in ['strNombreUsuario', 'strCorreo', 'strPwd', 'perfil', 'idEstadoUsuario', 'roles', 'foto', '_token'] %}
@@ -157,15 +155,15 @@
                                 {{ form_widget(form.foto, {'attr': {'onchange': 'previewImage(this)'}}) }}
                             </div>
                             <p class="text-muted small mt-2">Formatos: JPG, PNG (Máx 2MB)</p>
-                            {# Error de la foto #}
-                            <div class="text-danger small fw-bold">{{ form_errors(form.foto) }}</div>
+                            <div class="text-danger small fw-bold d-block">{{ form_errors(form.foto) }}</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{ form_end(form, {'render_rest': false}) }}
+        {# CORRECCIÓN: Quitamos render_rest: false para que Symfony pinte el token CSRF automáticamente #}
+        {{ form_end(form) }}
     </div>
 
     <style>

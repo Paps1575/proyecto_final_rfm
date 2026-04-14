@@ -22,6 +22,9 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 #[IsGranted('ROLE_USER')]
 final class UsuarioController extends AbstractController
 {
+    /**
+     * Recupera el nombre del módulo para la seguridad dinámica
+     */
     private function getNombreModulo(ModuloRepository $moduloRepo): string
     {
         $modulo = $moduloRepo->findOneBy(['strRuta' => 'app_usuario_index'])
@@ -31,6 +34,9 @@ final class UsuarioController extends AbstractController
         return $modulo ? $modulo->getStrNombre() : 'USUARIOS';
     }
 
+    /**
+     * LISTADO CON PAGINACIÓN Y FILTROS
+     */
     #[Route('/', name: 'app_usuario_index', methods: ['GET'])]
     public function index(
         UsuarioRepository $usuarioRepository,
@@ -73,6 +79,9 @@ final class UsuarioController extends AbstractController
         ]);
     }
 
+    /**
+     * CREAR NUEVO USUARIO
+     */
     #[Route('/nuevo', name: 'app_usuario_new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
@@ -94,7 +103,7 @@ final class UsuarioController extends AbstractController
 
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
-                // 1. Manejo de Imagen
+                // 1. Manejo de Imagen (Campo no mapeado 'foto')
                 $fotoFile = $form->get('foto')->getData();
                 if ($fotoFile) {
                     $originalFilename = pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME);
@@ -103,16 +112,16 @@ final class UsuarioController extends AbstractController
                         $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
                         $usuario->setFoto($newFilename);
                     } catch (FileException $e) {
-                        $this->addFlash('danger', 'Error físico al guardar la imagen en el servidor.');
+                        $this->addFlash('danger', 'Error físico al guardar la imagen.');
                     }
                 } else {
                     $usuario->setFoto('default.png');
                 }
 
-                // 2. Hasheo de Password (obtenido directamente del objeto mapeado)
-                if ($usuario->getStrPwd()) {
-                    $hashedPassword = $passwordHasher->hashPassword($usuario, $usuario->getStrPwd());
-                    $usuario->setPassword($hashedPassword);
+                // 2. Hasheo de Password (Campo no mapeado 'strPwd')
+                $plainPassword = $form->get('strPwd')->getData();
+                if ($plainPassword) {
+                    $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
                 }
 
                 try {
@@ -122,21 +131,22 @@ final class UsuarioController extends AbstractController
                     $this->addFlash('success', '¡Usuario ' . $usuario->getStrNombreUsuario() . ' creado correctamente!');
                     return $this->redirectToRoute('app_usuario_index');
                 } catch (\Exception $e) {
-                    // Captura errores de base de datos (como duplicados si falló el UniqueEntity)
-                    $this->addFlash('danger', 'Error al guardar en base de datos: ' . $e->getMessage());
+                    $this->addFlash('danger', 'Error de Base de Datos: El login o correo ya podrían existir.');
                 }
             } else {
-                // Alerta para el nuevo Twig
                 $this->addFlash('danger', 'Híjole, el formulario tiene errores. Revisa los campos marcados.');
             }
         }
 
-        return $this->render('usuario/new.html.twig', [
+        return $this->render('vistas/usuarios/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
         ]);
     }
 
+    /**
+     * EDITAR USUARIO
+     */
     #[Route('/{id}/editar', name: 'app_usuario_edit', methods: ['GET', 'POST'])]
     public function edit(
         Request $request,
@@ -153,6 +163,7 @@ final class UsuarioController extends AbstractController
             return $this->redirectToRoute('app_usuario_index');
         }
 
+        // Protección Admin Raíz (ID 7)
         if ($usuario->getId() === 7 && $this->getUser()->getId() !== 7) {
             $this->addFlash('danger', 'Acción restringida: El Administrador Principal está protegido.');
             return $this->redirectToRoute('app_usuario_index');
@@ -163,15 +174,19 @@ final class UsuarioController extends AbstractController
 
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
-                if ($fotoFile = $form->get('foto')->getData()) {
+                // Actualizar foto si se sube una nueva
+                $fotoFile = $form->get('foto')->getData();
+                if ($fotoFile) {
                     $originalFilename = pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME);
                     $newFilename = $slugger->slug($originalFilename).'-'.uniqid().'.'.$fotoFile->guessExtension();
                     $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
                     $usuario->setFoto($newFilename);
                 }
 
-                if ($usuario->getStrPwd()) {
-                    $usuario->setPassword($passwordHasher->hashPassword($usuario, $usuario->getStrPwd()));
+                // Cambiar password solo si el campo no está vacío
+                $plainPassword = $form->get('strPwd')->getData();
+                if ($plainPassword) {
+                    $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
                 }
 
                 try {
@@ -186,12 +201,15 @@ final class UsuarioController extends AbstractController
             }
         }
 
-        return $this->render('usuario/edit.html.twig', [
+        return $this->render('vistas/usuarios/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
         ]);
     }
 
+    /**
+     * ELIMINAR USUARIO
+     */
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
     public function delete(
         Request $request,
