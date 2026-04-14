@@ -22,17 +22,19 @@ RUN a2enmod rewrite
 
 WORKDIR /var/www/html
 
-# --- AJUSTE PARA JWT ---
-# Creamos la carpeta y generamos los archivos físicos desde las variables de entorno
-RUN mkdir -p config/jwt
-# Nota: Estos archivos se crearán con el contenido de tus variables de Render al construir
-# -----------------------
-
 # Instalamos dependencias
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Permisos finales
+# Permisos finales de carpetas Symfony
 RUN mkdir -p var/cache var/log && chown -R www-data:www-data var/ && chmod -R 777 var/
+
+# --- CONFIGURACIÓN DEL ENTRYPOINT ---
+# Copiamos el script de inicio y le damos permisos de ejecución
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Indicamos a Docker que use este script al arrancar
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 EXPOSE 80
