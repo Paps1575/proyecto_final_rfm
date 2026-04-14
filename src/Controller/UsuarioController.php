@@ -31,9 +31,6 @@ final class UsuarioController extends AbstractController
         return $modulo ? $modulo->getStrNombre() : 'USUARIOS';
     }
 
-    /**
-     * LISTADO (FUNCIONA)
-     */
     #[Route('/', name: 'app_usuario_index', methods: ['GET'])]
     public function index(
         UsuarioRepository $usuarioRepository,
@@ -44,7 +41,7 @@ final class UsuarioController extends AbstractController
         $nombreMod = $this->getNombreModulo($moduloRepository);
 
         if (!$this->isGranted(ModuloVoter::CONSULTAR, $nombreMod)) {
-            $this->addFlash('warning', 'Acceso denegado.');
+            $this->addFlash('warning', 'Acceso denegado: No tienes permisos de consulta.');
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -63,9 +60,6 @@ final class UsuarioController extends AbstractController
         ]);
     }
 
-    /**
-     * NUEVO (CORREGIDO)
-     */
     #[Route('/nuevo', name: 'app_usuario_new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
@@ -77,7 +71,7 @@ final class UsuarioController extends AbstractController
         $nombreMod = $this->getNombreModulo($moduloRepository);
 
         if (!$this->isGranted(ModuloVoter::AGREGAR, $nombreMod)) {
-            $this->addFlash('danger', 'Sin permisos para agregar.');
+            $this->addFlash('danger', 'Acceso denegado: No puedes agregar usuarios.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
@@ -86,39 +80,42 @@ final class UsuarioController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Manejo de imagen
+            // 1. Manejo de imagen (Campo no mapeado)
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
                 $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
-                $usuario->setFoto($newFilename);
+                try {
+                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                    $usuario->setFoto($newFilename);
+                } catch (FileException $e) {
+                    $this->addFlash('danger', 'Error crítico: No se pudo guardar el archivo en el servidor.');
+                }
             } else {
                 $usuario->setFoto('default.png');
             }
 
-            // Password
+            // 2. Manejo de Password (Campo no mapeado)
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
                 $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
             }
 
-            $entityManager->persist($usuario);
-            $entityManager->flush();
-
-            $this->addFlash('success', '¡Usuario creado!');
-            return $this->redirectToRoute('app_usuario_index');
+            try {
+                $entityManager->persist($usuario);
+                $entityManager->flush();
+                $this->addFlash('success', '¡Usuario creado exitosamente!');
+                return $this->redirectToRoute('app_usuario_index');
+            } catch (\Exception $e) {
+                $this->addFlash('danger', 'Error de Base de Datos: El login o correo ya existen.');
+            }
         }
 
-        // CAMBIO DE RUTA AQUÍ: De 'vistas/usuarios/new...' a 'usuario/new...'
         return $this->render('usuario/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
         ]);
     }
 
-    /**
-     * EDITAR (CORREGIDO)
-     */
     #[Route('/{id}/editar', name: 'app_usuario_edit', methods: ['GET', 'POST'])]
     public function edit(
         Request $request,
@@ -131,7 +128,7 @@ final class UsuarioController extends AbstractController
         $nombreMod = $this->getNombreModulo($moduloRepository);
 
         if (!$this->isGranted(ModuloVoter::EDITAR, $nombreMod)) {
-            $this->addFlash('danger', 'Sin permisos para editar.');
+            $this->addFlash('danger', 'Acceso denegado.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
@@ -142,8 +139,12 @@ final class UsuarioController extends AbstractController
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
                 $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
-                $usuario->setFoto($newFilename);
+                try {
+                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                    $usuario->setFoto($newFilename);
+                } catch (FileException $e) {
+                    $this->addFlash('danger', 'Error al actualizar la foto.');
+                }
             }
 
             $plainPassword = $form->get('strPwd')->getData();
@@ -152,11 +153,10 @@ final class UsuarioController extends AbstractController
             }
 
             $entityManager->flush();
-            $this->addFlash('success', 'Usuario actualizado.');
+            $this->addFlash('success', 'Usuario actualizado correctamente.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
-        // CAMBIO DE RUTA AQUÍ TAMBIÉN
         return $this->render('usuario/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
@@ -164,7 +164,7 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
-    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager, ModuloRepository $moduloRepository): Response
+    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete'.$usuario->getId(), $request->request->get('_token'))) {
             $entityManager->remove($usuario);

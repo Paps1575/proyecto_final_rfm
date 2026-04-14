@@ -30,7 +30,6 @@ class UsuarioType extends AbstractType
             ])
             ->add('strPwd', PasswordType::class, [
                 'label' => $isNew ? 'Contraseña' : 'Cambiar Contraseña',
-                // Al ser un password que luego hasheamos, no lo mapeamos directo a la propiedad de la base de datos
                 'mapped' => false,
                 'required' => $isNew,
                 'attr' => [
@@ -49,9 +48,12 @@ class UsuarioType extends AbstractType
             ])
             ->add('foto', FileType::class, [
                 'label' => 'Foto de Perfil',
-                'mapped' => false, // IMPORTANTE: El controlador maneja la subida física
+                'mapped' => false, // SE QUEDA FALSE: El controlador hará el trabajo sucio
                 'required' => false,
-                'attr' => ['class' => 'form-control rounded-3'],
+                'attr' => [
+                    'class' => 'form-control rounded-3',
+                    'accept' => 'image/jpeg,image/png' // Ayuda al navegador a filtrar
+                ],
                 'constraints' => [
                     new File(
                         maxSize: '2M',
@@ -90,19 +92,16 @@ class UsuarioType extends AbstractType
     private function getPasswordConstraints(bool $isNew): array
     {
         $constraints = [];
-
         if ($isNew) {
-            $constraints[] = new NotBlank(
-                message: 'La contraseña es obligatoria para nuevos registros.'
-            );
+            $constraints[] = new NotBlank([
+                'message' => 'La contraseña es obligatoria para nuevos registros.',
+            ]);
         }
-
-        $constraints[] = new Length(
-            min: 6,
-            minMessage: 'La contraseña debe tener al menos {{ limit }} caracteres.',
-            max: 4096
-        );
-
+        $constraints[] = new Length([
+            'min' => 6,
+            'minMessage' => 'La contraseña debe tener al menos {{ limit }} caracteres.',
+            'max' => 4096,
+        ]);
         return $constraints;
     }
 
