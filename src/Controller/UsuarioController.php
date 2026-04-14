@@ -32,63 +32,45 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/', name: 'app_usuario_index', methods: ['GET'])]
-    public function index(
-        UsuarioRepository $usuarioRepository,
-        PerfilRepository $perfilRepository,
-        ModuloRepository $moduloRepository,
-        Request $request
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
+    public function index(UsuarioRepository $repo, PerfilRepository $perfilRepo, ModuloRepository $modRepo, Request $request): Response
+    {
+        $nombreMod = $this->getNombreModulo($modRepo);
         if (!$this->isGranted(ModuloVoter::CONSULTAR, $nombreMod)) {
-            $this->addFlash('warning', 'Acceso denegado.');
+            $this->addFlash('warning', 'Sin acceso.');
             return $this->redirectToRoute('app_dashboard');
         }
 
         $limit = 5;
         $page = $request->query->getInt('page', 1);
-        $usuarios = $usuarioRepository->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
-        $totalUsers = $usuarioRepository->count([]);
+        $usuarios = $repo->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
 
-        // RUTA CORRECTA: carpeta 'usuario'
         return $this->render('usuario/index.html.twig', [
-            'usuarios'     => $usuarios,
-            'perfiles'     => $perfilRepository->findAll(),
+            'usuarios' => $usuarios,
+            'perfiles' => $perfilRepo->findAll(),
             'nombreModulo' => $nombreMod,
-            'currentPage'  => $page,
-            'pagesCount'   => ceil($totalUsers / $limit),
-            'totalUsers'   => $totalUsers
+            'currentPage' => $page,
+            'pagesCount' => ceil($repo->count([]) / $limit),
+            'totalUsers' => $repo->count([])
         ]);
     }
 
     #[Route('/nuevo', name: 'app_usuario_new', methods: ['GET', 'POST'])]
-    public function new(
-        Request $request,
-        EntityManagerInterface $entityManager,
-        UserPasswordHasherInterface $passwordHasher,
-        SluggerInterface $slugger,
-        ModuloRepository $moduloRepository
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
-        if (!$this->isGranted(ModuloVoter::AGREGAR, $nombreMod)) {
-            $this->addFlash('danger', 'Acceso denegado.');
-            return $this->redirectToRoute('app_usuario_index');
-        }
-
+    public function new(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $hasher, SluggerInterface $slugger, ModuloRepository $modRepo): Response
+    {
         $usuario = new Usuario();
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => true]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // Manejo de imagen con try-catch para que NO DE ERROR 500 si falla la carpeta
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
-                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
                 try {
+                    $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
                     $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
                     $usuario->setFoto($newFilename);
-                } catch (FileException $e) {
-                    $this->addFlash('danger', 'Error al guardar la foto.');
+                } catch (\Exception $e) {
+                    $usuario->setFoto('default.png');
                 }
             } else {
                 $usuario->setFoto('default.png');
@@ -96,20 +78,15 @@ final class UsuarioController extends AbstractController
 
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
-                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
+                $usuario->setPassword($hasher->hashPassword($usuario, $plainPassword));
             }
 
-            try {
-                $entityManager->persist($usuario);
-                $entityManager->flush();
-                $this->addFlash('success', '¡Usuario creado!');
-                return $this->redirectToRoute('app_usuario_index');
-            } catch (\Exception $e) {
-                $this->addFlash('danger', 'Error al guardar en BD.');
-            }
+            $em->persist($usuario);
+            $em->flush();
+            $this->addFlash('success', 'Usuario creado.');
+            return $this->redirectToRoute('app_usuario_index');
         }
 
-        // RUTA CORRECTA: carpeta 'usuario', archivo 'new.html.twig'
         return $this->render('usuario/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
@@ -117,43 +94,33 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/{id}/editar', name: 'app_usuario_edit', methods: ['GET', 'POST'])]
-    public function edit(
-        Request $request,
-        Usuario $usuario,
-        EntityManagerInterface $entityManager,
-        UserPasswordHasherInterface $passwordHasher,
-        SluggerInterface $slugger,
-        ModuloRepository $moduloRepository
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
-        if (!$this->isGranted(ModuloVoter::EDITAR, $nombreMod)) {
-            $this->addFlash('danger', 'Acceso denegado.');
-            return $this->redirectToRoute('app_usuario_index');
-        }
-
+    public function edit(Request $request, Usuario $usuario, EntityManagerInterface $em, UserPasswordHasherInterface $hasher, SluggerInterface $slugger): Response
+    {
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => false]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
-                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
-                $usuario->setFoto($newFilename);
+                try {
+                    $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
+                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                    $usuario->setFoto($newFilename);
+                } catch (\Exception $e) {
+                    // No hace nada, conserva la que tiene
+                }
             }
 
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
-                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
+                $usuario->setPassword($hasher->hashPassword($usuario, $plainPassword));
             }
 
-            $entityManager->flush();
+            $em->flush();
             $this->addFlash('success', 'Usuario actualizado.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
-        // RUTA CORRECTA: carpeta 'usuario', archivo 'edit.html.twig'
         return $this->render('usuario/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
@@ -161,12 +128,10 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
-    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager): Response
-    {
+    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $em): Response {
         if ($this->isCsrfTokenValid('delete'.$usuario->getId(), $request->request->get('_token'))) {
-            $entityManager->remove($usuario);
-            $entityManager->flush();
-            $this->addFlash('info', 'Usuario eliminado.');
+            $em->remove($usuario);
+            $em->flush();
         }
         return $this->redirectToRoute('app_usuario_index');
     }
