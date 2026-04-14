@@ -7,7 +7,6 @@ use App\Form\UsuarioType;
 use App\Repository\UsuarioRepository;
 use App\Repository\PerfilRepository;
 use App\Repository\ModuloRepository;
-use App\Security\Voter\ModuloVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,50 +30,29 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/', name: 'app_usuario_index', methods: ['GET'])]
-    public function index(
-        UsuarioRepository $usuarioRepository,
-        PerfilRepository $perfilRepository,
-        ModuloRepository $moduloRepository,
-        Request $request
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
+    public function index(UsuarioRepository $repo, PerfilRepository $perfilRepo, ModuloRepository $modRepo, Request $request): Response
+    {
+        $nombreMod = $this->getNombreModulo($modRepo);
 
-        if (!$this->isGranted(ModuloVoter::CONSULTAR, $nombreMod)) {
-            $this->addFlash('warning', 'Acceso denegado.');
-            return $this->redirectToRoute('app_dashboard');
-        }
-
-        $limit = 5;
-        $page = $request->query->getInt('page', 1);
-        $usuarios = $usuarioRepository->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
-        $totalUsers = $usuarioRepository->count([]);
+        // Listado simple
+        $usuarios = $repo->findBy([], ['id' => 'DESC'], 5, ($request->query->getInt('page', 1) - 1) * 5);
 
         return $this->render('usuario/index.html.twig', [
             'usuarios'     => $usuarios,
-            'perfiles'     => $perfilRepository->findAll(),
+            'perfiles'     => $perfilRepo->findAll(),
             'nombreModulo' => $nombreMod,
-            'currentPage'  => $page,
-            'pagesCount'   => ceil($totalUsers / $limit),
-            'totalUsers'   => $totalUsers
+            'currentPage'  => $request->query->getInt('page', 1),
+            'pagesCount'   => ceil($repo->count([]) / 5),
+            'totalUsers'   => $repo->count([])
         ]);
     }
 
     #[Route('/nuevo', name: 'app_usuario_new', methods: ['GET', 'POST'])]
-    public function new(
-        Request $request,
-        EntityManagerInterface $entityManager,
-        UserPasswordHasherInterface $passwordHasher,
-        SluggerInterface $slugger,
-        ModuloRepository $moduloRepository
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
-        if (!$this->isGranted(ModuloVoter::AGREGAR, $nombreMod)) {
-            $this->addFlash('danger', 'Sin permisos para agregar.');
-            return $this->redirectToRoute('app_usuario_index');
-        }
-
+    public function new(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $hasher, SluggerInterface $slugger, ModuloRepository $modRepo): Response
+    {
+        $nombreMod = $this->getNombreModulo($modRepo);
         $usuario = new Usuario();
+
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => true]);
         $form->handleRequest($request);
 
@@ -94,39 +72,27 @@ final class UsuarioController extends AbstractController
 
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
-                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
+                $usuario->setPassword($hasher->hashPassword($usuario, $plainPassword));
             }
 
-            $entityManager->persist($usuario);
-            $entityManager->flush();
+            $em->persist($usuario);
+            $em->flush();
 
-            $this->addFlash('success', '¡Usuario creado!');
+            $this->addFlash('success', 'Usuario creado.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
         return $this->render('usuario/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
-            'nombreModulo' => $nombreMod, // ¡ESTA VARIABLE FALTABA!
+            'nombreModulo' => $nombreMod,
         ]);
     }
 
     #[Route('/{id}/editar', name: 'app_usuario_edit', methods: ['GET', 'POST'])]
-    public function edit(
-        Request $request,
-        Usuario $usuario,
-        EntityManagerInterface $entityManager,
-        UserPasswordHasherInterface $passwordHasher,
-        SluggerInterface $slugger,
-        ModuloRepository $moduloRepository
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
-        if (!$this->isGranted(ModuloVoter::EDITAR, $nombreMod)) {
-            $this->addFlash('danger', 'Sin permisos para editar.');
-            return $this->redirectToRoute('app_usuario_index');
-        }
-
+    public function edit(Request $request, Usuario $usuario, EntityManagerInterface $em, UserPasswordHasherInterface $hasher, SluggerInterface $slugger, ModuloRepository $modRepo): Response
+    {
+        $nombreMod = $this->getNombreModulo($modRepo);
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => false]);
         $form->handleRequest($request);
 
@@ -142,10 +108,10 @@ final class UsuarioController extends AbstractController
 
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
-                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
+                $usuario->setPassword($hasher->hashPassword($usuario, $plainPassword));
             }
 
-            $entityManager->flush();
+            $em->flush();
             $this->addFlash('success', 'Usuario actualizado.');
             return $this->redirectToRoute('app_usuario_index');
         }
@@ -153,17 +119,16 @@ final class UsuarioController extends AbstractController
         return $this->render('usuario/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
-            'nombreModulo' => $nombreMod, // ¡Y AQUÍ TAMBIÉN FALTABA!
+            'nombreModulo' => $nombreMod,
         ]);
     }
 
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
-    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager): Response
+    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $em): Response
     {
         if ($this->isCsrfTokenValid('delete'.$usuario->getId(), $request->request->get('_token'))) {
-            $entityManager->remove($usuario);
-            $entityManager->flush();
-            $this->addFlash('info', 'Usuario eliminado.');
+            $em->remove($usuario);
+            $em->flush();
         }
         return $this->redirectToRoute('app_usuario_index');
     }
