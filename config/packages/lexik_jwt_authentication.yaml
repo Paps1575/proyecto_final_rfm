@@ -1,11 +1,10 @@
 # config/packages/lexik_jwt_authentication.yaml
 lexik_jwt_authentication:
-    # Cambiamos JWT_SECRET_KEY por JWT_PRIVATE_KEY para que coincida con tu variable de Render
     secret_key: '%env(resolve:JWT_PRIVATE_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
 
-    # El nombre correcto del parámetro es 'passphrase'
-    passphrase: '%env(JWT_PASSPHRASE)%'
+    # Cambiado a pass_phrase con guion bajo como lo pide tu versión del bundle
+    pass_phrase: '%env(JWT_PASSPHRASE)%'
 
     token_extractors:
         authorization_header:
