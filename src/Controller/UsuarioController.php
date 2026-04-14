@@ -41,7 +41,7 @@ final class UsuarioController extends AbstractController
         $nombreMod = $this->getNombreModulo($moduloRepository);
 
         if (!$this->isGranted(ModuloVoter::CONSULTAR, $nombreMod)) {
-            $this->addFlash('warning', 'Acceso denegado: No tienes permisos de consulta.');
+            $this->addFlash('warning', 'Acceso denegado.');
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -50,6 +50,7 @@ final class UsuarioController extends AbstractController
         $usuarios = $usuarioRepository->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
         $totalUsers = $usuarioRepository->count([]);
 
+        // RUTA CORRECTA: carpeta 'usuario'
         return $this->render('usuario/index.html.twig', [
             'usuarios'     => $usuarios,
             'perfiles'     => $perfilRepository->findAll(),
@@ -71,7 +72,7 @@ final class UsuarioController extends AbstractController
         $nombreMod = $this->getNombreModulo($moduloRepository);
 
         if (!$this->isGranted(ModuloVoter::AGREGAR, $nombreMod)) {
-            $this->addFlash('danger', 'Acceso denegado: No puedes agregar usuarios.');
+            $this->addFlash('danger', 'Acceso denegado.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
@@ -80,7 +81,6 @@ final class UsuarioController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // 1. Manejo de imagen (Campo no mapeado)
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
                 $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
@@ -88,13 +88,12 @@ final class UsuarioController extends AbstractController
                     $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
                     $usuario->setFoto($newFilename);
                 } catch (FileException $e) {
-                    $this->addFlash('danger', 'Error crítico: No se pudo guardar el archivo en el servidor.');
+                    $this->addFlash('danger', 'Error al guardar la foto.');
                 }
             } else {
                 $usuario->setFoto('default.png');
             }
 
-            // 2. Manejo de Password (Campo no mapeado)
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
                 $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
@@ -103,13 +102,14 @@ final class UsuarioController extends AbstractController
             try {
                 $entityManager->persist($usuario);
                 $entityManager->flush();
-                $this->addFlash('success', '¡Usuario creado exitosamente!');
+                $this->addFlash('success', '¡Usuario creado!');
                 return $this->redirectToRoute('app_usuario_index');
             } catch (\Exception $e) {
-                $this->addFlash('danger', 'Error de Base de Datos: El login o correo ya existen.');
+                $this->addFlash('danger', 'Error al guardar en BD.');
             }
         }
 
+        // RUTA CORRECTA: carpeta 'usuario', archivo 'new.html.twig'
         return $this->render('usuario/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
@@ -139,12 +139,8 @@ final class UsuarioController extends AbstractController
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
                 $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
-                try {
-                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
-                    $usuario->setFoto($newFilename);
-                } catch (FileException $e) {
-                    $this->addFlash('danger', 'Error al actualizar la foto.');
-                }
+                $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                $usuario->setFoto($newFilename);
             }
 
             $plainPassword = $form->get('strPwd')->getData();
@@ -153,10 +149,11 @@ final class UsuarioController extends AbstractController
             }
 
             $entityManager->flush();
-            $this->addFlash('success', 'Usuario actualizado correctamente.');
+            $this->addFlash('success', 'Usuario actualizado.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
+        // RUTA CORRECTA: carpeta 'usuario', archivo 'edit.html.twig'
         return $this->render('usuario/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
