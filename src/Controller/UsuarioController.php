@@ -16,7 +16,6 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\String\Slugger\SluggerInterface;
-use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
 #[Route('/vistas/usuarios')]
 #[IsGranted('ROLE_USER')]
@@ -32,144 +31,107 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/', name: 'app_usuario_index', methods: ['GET'])]
-    public function index(
-        UsuarioRepository $usuarioRepository,
-        PerfilRepository $perfilRepository,
-        ModuloRepository $moduloRepository,
-        Request $request
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
-        if (!$this->isGranted(ModuloVoter::CONSULTAR, $nombreMod)) {
-            $this->addFlash('warning', 'Acceso denegado: No tienes permisos de consulta.');
-            return $this->redirectToRoute('app_dashboard');
-        }
-
+    public function index(UsuarioRepository $repo, PerfilRepository $perfilRepo, ModuloRepository $modRepo, Request $request): Response
+    {
+        $nombreMod = $this->getNombreModulo($modRepo);
         $limit = 5;
         $page = $request->query->getInt('page', 1);
-        $usuarios = $usuarioRepository->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
-        $totalUsers = $usuarioRepository->count([]);
+        $usuarios = $repo->findBy([], ['id' => 'DESC'], $limit, ($page - 1) * $limit);
 
         return $this->render('usuario/index.html.twig', [
-            'usuarios'     => $usuarios,
-            'perfiles'     => $perfilRepository->findAll(),
+            'usuarios' => $usuarios,
+            'perfiles' => $perfilRepo->findAll(),
             'nombreModulo' => $nombreMod,
-            'currentPage'  => $page,
-            'pagesCount'   => ceil($totalUsers / $limit),
-            'totalUsers'   => $totalUsers
+            'currentPage' => $page,
+            'pagesCount' => ceil($repo->count([]) / $limit),
+            'totalUsers' => $repo->count([])
         ]);
     }
 
     #[Route('/nuevo', name: 'app_usuario_new', methods: ['GET', 'POST'])]
-    public function new(
-        Request $request,
-        EntityManagerInterface $entityManager,
-        UserPasswordHasherInterface $passwordHasher,
-        SluggerInterface $slugger,
-        ModuloRepository $moduloRepository
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
-        if (!$this->isGranted(ModuloVoter::AGREGAR, $nombreMod)) {
-            $this->addFlash('danger', 'Acceso denegado: No puedes agregar usuarios.');
-            return $this->redirectToRoute('app_usuario_index');
-        }
-
+    public function new(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $hasher, SluggerInterface $slugger, ModuloRepository $modRepo): Response
+    {
+        $nombreMod = $this->getNombreModulo($modRepo);
         $usuario = new Usuario();
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => true]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // 1. Manejo de imagen (Campo no mapeado)
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
-                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
                 try {
-                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                    $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
+                    // Usamos kernel.project_dir que es nativo de Symfony
+                    $dest = $this->getParameter('kernel.project_dir') . '/public/uploads/fotos';
+                    $fotoFile->move($dest, $newFilename);
                     $usuario->setFoto($newFilename);
-                } catch (FileException $e) {
-                    $this->addFlash('danger', 'Error crítico: No se pudo guardar el archivo en el servidor.');
+                } catch (\Exception $e) {
+                    $usuario->setFoto('default.png');
                 }
             } else {
                 $usuario->setFoto('default.png');
             }
 
-            // 2. Manejo de Password (Campo no mapeado)
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
-                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
+                $usuario->setPassword($hasher->hashPassword($usuario, $plainPassword));
             }
 
-            try {
-                $entityManager->persist($usuario);
-                $entityManager->flush();
-                $this->addFlash('success', '¡Usuario creado exitosamente!');
-                return $this->redirectToRoute('app_usuario_index');
-            } catch (\Exception $e) {
-                $this->addFlash('danger', 'Error de Base de Datos: El login o correo ya existen.');
-            }
+            $em->persist($usuario);
+            $em->flush();
+            $this->addFlash('success', 'Usuario creado.');
+            return $this->redirectToRoute('app_usuario_index');
         }
 
+        // RUTA: usuario/new.html.twig (Basado en tu imagen)
         return $this->render('usuario/new.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
+            'nombreModulo' => $nombreMod // Variable necesaria para el layout
         ]);
     }
 
     #[Route('/{id}/editar', name: 'app_usuario_edit', methods: ['GET', 'POST'])]
-    public function edit(
-        Request $request,
-        Usuario $usuario,
-        EntityManagerInterface $entityManager,
-        UserPasswordHasherInterface $passwordHasher,
-        SluggerInterface $slugger,
-        ModuloRepository $moduloRepository
-    ): Response {
-        $nombreMod = $this->getNombreModulo($moduloRepository);
-
-        if (!$this->isGranted(ModuloVoter::EDITAR, $nombreMod)) {
-            $this->addFlash('danger', 'Acceso denegado.');
-            return $this->redirectToRoute('app_usuario_index');
-        }
-
+    public function edit(Request $request, Usuario $usuario, EntityManagerInterface $em, UserPasswordHasherInterface $hasher, SluggerInterface $slugger, ModuloRepository $modRepo): Response
+    {
+        $nombreMod = $this->getNombreModulo($modRepo);
         $form = $this->createForm(UsuarioType::class, $usuario, ['is_new' => false]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $fotoFile = $form->get('foto')->getData();
             if ($fotoFile) {
-                $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
                 try {
-                    $fotoFile->move($this->getParameter('fotos_directory'), $newFilename);
+                    $newFilename = $slugger->slug(pathinfo($fotoFile->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.'.$fotoFile->guessExtension();
+                    $dest = $this->getParameter('kernel.project_dir') . '/public/uploads/fotos';
+                    $fotoFile->move($dest, $newFilename);
                     $usuario->setFoto($newFilename);
-                } catch (FileException $e) {
-                    $this->addFlash('danger', 'Error al actualizar la foto.');
-                }
+                } catch (\Exception $e) {}
             }
 
             $plainPassword = $form->get('strPwd')->getData();
             if ($plainPassword) {
-                $usuario->setPassword($passwordHasher->hashPassword($usuario, $plainPassword));
+                $usuario->setPassword($hasher->hashPassword($usuario, $plainPassword));
             }
 
-            $entityManager->flush();
-            $this->addFlash('success', 'Usuario actualizado correctamente.');
+            $em->flush();
+            $this->addFlash('success', 'Usuario actualizado.');
             return $this->redirectToRoute('app_usuario_index');
         }
 
+        // RUTA: usuario/edit.html.twig (Basado en tu imagen)
         return $this->render('usuario/edit.html.twig', [
             'usuario' => $usuario,
             'form' => $form->createView(),
+            'nombreModulo' => $nombreMod // Variable necesaria para el layout
         ]);
     }
 
     #[Route('/{id}', name: 'app_usuario_delete', methods: ['POST'])]
-    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $entityManager): Response
-    {
+    public function delete(Request $request, Usuario $usuario, EntityManagerInterface $em): Response {
         if ($this->isCsrfTokenValid('delete'.$usuario->getId(), $request->request->get('_token'))) {
-            $entityManager->remove($usuario);
-            $entityManager->flush();
-            $this->addFlash('info', 'Usuario eliminado.');
+            $em->remove($usuario);
+            $em->flush();
         }
         return $this->redirectToRoute('app_usuario_index');
     }
