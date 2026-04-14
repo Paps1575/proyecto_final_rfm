@@ -1,10 +1,9 @@
-# config/packages/lexik_jwt_authentication.yaml
 lexik_jwt_authentication:
-    # Apuntamos a los archivos físicos dentro del contenedor
+    # Estas rutas son relativas a la carpeta del proyecto dentro de Docker
     secret_key: '%kernel.project_dir%/config/jwt/private.pem'
     public_key: '%kernel.project_dir%/config/jwt/public.pem'
 
-    # Usamos la variable de entorno para la contraseña
+    # Usamos pass_phrase con guion bajo como pidió tu versión del bundle
     pass_phrase: '%env(JWT_PASSPHRASE)%'
 
     token_extractors:
