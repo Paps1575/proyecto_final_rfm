@@ -27,7 +27,6 @@ final class ModuloController extends AbstractController
     {
         $this->denyAccessUnlessGranted(ModuloVoter::CONSULTAR, 'Modulos');
 
-        // --- LÓGICA DE PAGINACIÓN ---
         $limit = 5;
         $page = $request->query->getInt('page', 1);
         if ($page < 1) $page = 1;
@@ -35,7 +34,6 @@ final class ModuloController extends AbstractController
         $totalModulos = $moduloRepository->count([]);
         $pagesCount = ceil($totalModulos / $limit);
 
-        // Evitar que pidan una página mayor a la existente
         if ($page > $pagesCount && $pagesCount > 0) $page = $pagesCount;
 
         $modulos = $moduloRepository->findBy([], ['id' => 'ASC'], $limit, ($page - 1) * $limit);
@@ -49,7 +47,7 @@ final class ModuloController extends AbstractController
     }
 
     /**
-     * NUEVO MÓDULO + SINCRONIZACIÓN
+     * NUEVO MÓDULO + GENERACIÓN AUTOMÁTICA DE DATOS
      */
     #[Route('/nuevo', name: 'app_modulo_new', methods: ['GET', 'POST'])]
     public function new(
@@ -64,9 +62,24 @@ final class ModuloController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
+            // --- CORRECCIÓN CRÍTICA PARA EVITAR EL ERROR 500 ---
+            // Si no viene la ruta (porque la ocultamos en el Twig), la generamos proactivamente
+            if (!$modulo->getStrRuta()) {
+                $rawName = $modulo->getStrNombre();
+                // Limpiamos el nombre para que sea una ruta válida (ej: "Módulos Extra" -> "app_modulos_extra_index")
+                $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '_', $rawName)));
+                $modulo->setStrRuta('app_' . $slug . '_index');
+            }
+
+            // Si el estado no está definido, por defecto es 1 (Activo)
+            if ($modulo->getIntEstado() === null) {
+                $modulo->setIntEstado(1);
+            }
+
             $entityManager->persist($modulo);
 
-            // Sincronizamos con todos los perfiles existentes
+            // Sincronización automática de permisos con todos los perfiles
             $perfiles = $perfilRepository->findAll();
             foreach ($perfiles as $perfil) {
                 $permiso = new PermisoPerfil();
@@ -86,7 +99,7 @@ final class ModuloController extends AbstractController
 
         return $this->render('modulo/new.html.twig', [
             'modulo' => $modulo,
-            'form' => $form,
+            'form' => $form->createView(),
         ]);
     }
 
@@ -109,7 +122,7 @@ final class ModuloController extends AbstractController
 
         return $this->render('modulo/edit.html.twig', [
             'modulo' => $modulo,
-            'form' => $form,
+            'form' => $form->createView(),
         ]);
     }
 
@@ -127,7 +140,7 @@ final class ModuloController extends AbstractController
                 $entityManager->flush();
                 $this->addFlash('warning', 'Módulo eliminado.');
             } catch (\Exception $e) {
-                $this->addFlash('danger', 'No se puede eliminar: tiene dependencias activas.');
+                $this->addFlash('danger', 'No se puede eliminar: el módulo tiene datos asociados.');
             }
         }
 
