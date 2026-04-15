@@ -4,7 +4,7 @@
 
 {% block body %}
     <div class="container d-flex align-items-center justify-content-center" style="min-height: 75vh;">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="max-width: 420px; width: 100%;">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="max-width: 450px; width: 100%;">
 
             {# HEADER MINIMALISTA #}
             <div class="card-header bg-dark text-white text-center py-4 border-0">
@@ -16,20 +16,44 @@
             </div>
 
             <div class="card-body p-4 bg-white">
-                {{ form_start(form) }}
+                {# Agregamos novalidate para evitar bloqueos silenciosos del navegador #}
+                {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
 
-                <div class="mb-4">
-                    <label class="small fw-bold text-secondary text-uppercase mb-2 d-block text-center">Nombre de la Sección</label>
+                {# CAMPO: NOMBRE #}
+                <div class="mb-3">
+                    <label class="small fw-bold text-secondary text-uppercase mb-1 d-block">Nombre de la Sección</label>
                     {{ form_widget(form.strNombre, {
                         'attr': {
-                            'class': 'form-control form-control-lg border-0 bg-light text-center fw-bold text-uppercase',
-                            'placeholder': 'Ej: VENTAS',
-                            'style': 'font-size: 1.4rem; letter-spacing: 2px;'
+                            'class': 'form-control border-0 bg-light fw-bold text-uppercase',
+                            'placeholder': 'Ej: VENTAS'
+                        }
+                    }) }}
+                    <div class="text-danger small">{{ form_errors(form.strNombre) }}</div>
+                </div>
+
+                {# CAMPO: RUTA (Vital para que funcione el sistema) #}
+                <div class="mb-3">
+                    <label class="small fw-bold text-secondary text-uppercase mb-1 d-block">Nombre de la Ruta (Route)</label>
+                    {{ form_widget(form.strRuta, {
+                        'attr': {
+                            'class': 'form-control border-0 bg-light font-monospace small',
+                            'placeholder': 'Ej: app_modulo_index'
+                        }
+                    }) }}
+                    <div class="text-danger small">{{ form_errors(form.strRuta) }}</div>
+                </div>
+
+                {# CAMPO: ESTADO #}
+                <div class="mb-4">
+                    <label class="small fw-bold text-secondary text-uppercase mb-1 d-block">Estado Inicial</label>
+                    {{ form_widget(form.intEstado, {
+                        'attr': {
+                            'class': 'form-select border-0 bg-light'
                         }
                     }) }}
                 </div>
 
-                {# BOTONES LIMPIOS #}
+                {# BOTONES #}
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary py-2 fw-bold shadow-sm rounded-3" style="background-color: #004a98; border: none;">
                         GUARDAR MÓDULO
@@ -39,11 +63,7 @@
                     </a>
                 </div>
 
-                {# CAMPOS OCULTOS #}
-                <div class="d-none">
-                    {{ form_rest(form) }}
-                </div>
-
+                {# form_end renderiza el token CSRF automáticamente para seguridad #}
                 {{ form_end(form) }}
             </div>
         </div>
@@ -51,7 +71,12 @@
 
     <style>
         .tracking-wider { letter-spacing: 1.5px; }
-        .form-control:focus { background-color: #eef2f7 !important; outline: none; box-shadow: none; }
+        .form-control:focus, .form-select:focus {
+            background-color: #eef2f7 !important;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(13, 202, 240, 0.25);
+            border: 1px solid #0dcaf0;
+        }
         .card { animation: slideUp 0.4s ease-out; }
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(15px); }
