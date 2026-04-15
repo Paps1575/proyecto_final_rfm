@@ -48,11 +48,11 @@ class UsuarioType extends AbstractType
             ])
             ->add('foto', FileType::class, [
                 'label' => 'Foto de Perfil',
-                'mapped' => false, // SE QUEDA FALSE: El controlador hará el trabajo sucio
+                'mapped' => false,
                 'required' => false,
                 'attr' => [
                     'class' => 'form-control rounded-3',
-                    'accept' => 'image/jpeg,image/png' // Ayuda al navegador a filtrar
+                    'accept' => 'image/jpeg,image/png'
                 ],
                 'constraints' => [
                     new File(
@@ -93,15 +93,18 @@ class UsuarioType extends AbstractType
     {
         $constraints = [];
         if ($isNew) {
-            $constraints[] = new NotBlank([
-                'message' => 'La contraseña es obligatoria para nuevos registros.',
-            ]);
+            // CORRECCIÓN: Se usa el argumento con nombre 'message' en lugar de un array
+            $constraints[] = new NotBlank(
+                message: 'La contraseña es obligatoria para nuevos registros.'
+            );
         }
-        $constraints[] = new Length([
-            'min' => 6,
-            'minMessage' => 'La contraseña debe tener al menos {{ limit }} caracteres.',
-            'max' => 4096,
-        ]);
+
+        $constraints[] = new Length(
+            min: 6,
+            minMessage: 'La contraseña debe tener al menos {{ limit }} caracteres.',
+            max: 4096
+        );
+
         return $constraints;
     }
 

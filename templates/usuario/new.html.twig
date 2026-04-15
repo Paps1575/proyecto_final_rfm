@@ -43,8 +43,8 @@
             </div>
         {% endif %}
 
-        {# CORRECCIÓN: Se agrega enctype para permitir el envío de archivos (fotos) #}
-        {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
+        {# INICIO DEL FORMULARIO #}
+        {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
 
         <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
             {# HEADER OSCURO #}
@@ -89,15 +89,10 @@
                                     {{ form_widget(form.strCorreo, {'attr': {'class': 'form-control bg-light ' ~ (form.strCorreo.vars.valid ? '' : 'is-invalid')}}) }}
                                     <div class="invalid-feedback d-block">{{ form_errors(form.strCorreo) }}</div>
                                 </div>
-
                                 <div class="col-md-4">
-                                    {% for child in form %}
-                                        {% if child.vars.name not in ['strNombreUsuario', 'strCorreo', 'strPwd', 'perfil', 'idEstadoUsuario', 'roles', 'foto', '_token'] %}
-                                            {{ form_label(child, 'Teléfono / WhatsApp', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
-                                            {{ form_widget(child, {'attr': {'class': 'form-control bg-light ' ~ (child.vars.valid ? '' : 'is-invalid'), 'placeholder': '10 dígitos'}}) }}
-                                            <div class="invalid-feedback d-block">{{ form_errors(child) }}</div>
-                                        {% endif %}
-                                    {% endfor %}
+                                    {{ form_label(form.strNumeroCelular, 'Teléfono / WhatsApp', {'label_attr': {'class': 'fw-bold small mb-1 text-muted'}}) }}
+                                    {{ form_widget(form.strNumeroCelular, {'attr': {'class': 'form-control bg-light ' ~ (form.strNumeroCelular.vars.valid ? '' : 'is-invalid'), 'placeholder': '10 dígitos'}}) }}
+                                    <div class="invalid-feedback d-block">{{ form_errors(form.strNumeroCelular) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -162,7 +157,7 @@
             </div>
         </div>
 
-        {# CORRECCIÓN: Quitamos render_rest: false para que Symfony pinte el token CSRF automáticamente #}
+        {# FINAL DEL FORMULARIO (Renderiza automáticamente el token CSRF) #}
         {{ form_end(form) }}
     </div>
 
