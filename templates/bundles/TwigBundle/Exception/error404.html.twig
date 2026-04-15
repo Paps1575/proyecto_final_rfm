@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}404 - No Encontrado{% endblock %}
+
+{% block body %}
+    <div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+        <div class="text-center">
+            <h1 class="display-1 fw-bold text-info">404</h1>
+            <div class="mb-4">
+                <i class="bi bi-rocket-takeoff text-secondary" style="font-size: 5rem;"></i>
+            </div>
+            <h2 class="fw-bold">¡TE PERDISTE EN EL ESPACIO, PAPS!</h2>
+            <p class="text-muted lead">La página que buscas no existe o fue movida a otra galaxia.</p>
+            <hr class="my-4">
+            <a href="{{ path('app_dashboard') }}" class="btn btn-info btn-lg rounded-pill px-5 fw-bold shadow">
+                REGRESAR AL DASHBOARD
+            </a>
+        </div>
+    </div>
+{% endblock %}
