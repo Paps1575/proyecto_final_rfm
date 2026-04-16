@@ -4,6 +4,7 @@ namespace App\DataFixtures;
 
 use App\Entity\Perfil;
 use App\Entity\Usuario;
+use App\Entity\CatEstadoUsuario; // Asegúrate de que esta sea la clase de tu entidad de estados
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -12,7 +13,6 @@ class UsuarioFixture extends Fixture
 {
     private UserPasswordHasherInterface $passwordHasher;
 
-    // Inyectamos el servicio para encriptar
     public function __construct(UserPasswordHasherInterface $passwordHasher)
     {
         $this->passwordHasher = $passwordHasher;
@@ -20,30 +20,42 @@ class UsuarioFixture extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        // 1. Creamos el Perfil de Administrador
+        // 1. Creamos el Estado ACTIVO (Fundamental para que el UserChecker lo deje pasar)
+        // Si ya tienes estados en tu DB, puedes omitir esto y buscarlo,
+        // pero para Fixtures limpias, lo creamos de una:
+        $estadoActivo = new CatEstadoUsuario();
+        $estadoActivo->setStrNombreEstado('ACTIVO'); // Ajusta según tus campos
+        $manager->persist($estadoActivo);
+
+        // 2. Creamos el Perfil de Administrador
         $perfil = new Perfil();
         $perfil->setStrNombrePerfil('Administrador');
         $perfil->setBitAdministrador(true);
         $manager->persist($perfil);
 
-        // 2. Creamos a Parito (Tu usuario de deidad)
+        // 3. Creamos al Administrador (Tu usuario de deidad)
         $usuario = new Usuario();
         $usuario->setStrNombreUsuario('parito_admin');
         $usuario->setPerfil($perfil);
         $usuario->setStrCorreo('admin@proyecto.com');
-        $usuario->setStrNumeroCelular('1234567890');
-        $usuario->setFoto('default.jpg');
-        $usuario->setIdEstadoUsuario(true);
+        $usuario->setStrNumeroCelular('5512345678');
+        $usuario->setFoto('default.png');
+
+        // LE ASIGNAMOS EL OBJETO DE ESTADO (Para que isActivo() sea true)
+        $usuario->setIdEstadoUsuario($estadoActivo);
+
         $usuario->setRoles(['ROLE_ADMIN']);
 
-        // AQUÍ ESTÁ EL TRUCO: Encriptamos el password
+        // Encriptamos el password
         $hashedPassword = $this->passwordHasher->hashPassword(
             $usuario,
-            'password123'
+            'admin123' // Cámbiala por una más pro luego, bro
         );
         $usuario->setStrPwd($hashedPassword);
 
         $manager->persist($usuario);
-        $manager->flush(); // ¡A Railway!
+
+        // 4. ¡A la de carga!
+        $manager->flush();
     }
 }
