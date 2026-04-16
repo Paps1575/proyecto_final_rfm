@@ -35,6 +35,9 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: "str_pwd", length: 255)]
     private ?string $strPwd = null;
 
+    /**
+     * IMPORTANTE: Si es boolean, true = Activo, false = Bloqueado
+     */
     #[ORM\Column]
     private ?bool $idEstadoUsuario = true;
 
@@ -48,12 +51,16 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Regex(pattern: '/^[0-9]{10}$/', message: 'El teléfono debe contener exactamente 10 dígitos numéricos.')]
     private ?string $strNumeroCelular = null;
 
-    /**
-     * CORRECCIÓN: Quitamos los Asserts de aquí para evitar el error "File not found".
-     * La validación se hará ahora exclusivamente en el FormType.
-     */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $foto = 'default.png';
+
+    // --- MÉTODOS DE SEGURIDAD ---
+
+    public function isActivo(): bool
+    {
+        // Como tu propiedad es boolean, simplemente retornamos su valor
+        return (bool) $this->idEstadoUsuario;
+    }
 
     public function getId(): ?int { return $this->id; }
     public function getUserIdentifier(): string { return (string) $this->strNombreUsuario; }
