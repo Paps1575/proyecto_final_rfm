@@ -16,7 +16,7 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        # --- JWT: LOGIN (Debe ir antes que el main) ---
+        # --- JWT: LOGIN (Para la API) ---
         api_login:
             pattern: ^/api/login
             stateless: true
@@ -37,6 +37,9 @@ security:
             provider: app_user_provider
             custom_authenticator: App\Security\AppAuthenticator
 
+            # --- CORRECCIÓN CRÍTICA: Activa el bloqueo de usuarios ---
+            user_checker: App\Security\UserChecker
+
             logout:
                 path: app_logout
                 target: app_login
@@ -55,4 +58,5 @@ security:
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
         # Rutas Protegidas Web (Todo lo demás)
+        # Importante: Esto asegura que nadie entre si no está logueado
         - { path: ^/, roles: IS_AUTHENTICATED_FULLY }
